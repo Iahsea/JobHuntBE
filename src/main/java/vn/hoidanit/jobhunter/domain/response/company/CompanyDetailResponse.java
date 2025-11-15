@@ -2,6 +2,7 @@ package vn.hoidanit.jobhunter.domain.response.company;
 
 import lombok.Getter;
 import lombok.Setter;
+import vn.hoidanit.jobhunter.domain.SocialLinks;
 import vn.hoidanit.jobhunter.domain.response.job.JobSummaryResponse;
 
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ public class CompanyDetailResponse {
     private LocalDate foundedDate;
     private Integer employeeCount;
     private String benefits;
+    private SocialLinks socialLinks;
 
     private List<JobSummaryResponse> jobs;
 }
