@@ -10,7 +10,10 @@ import org.springframework.stereotype.Service;
 
 import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.User;
+import vn.hoidanit.jobhunter.domain.Job;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
+import vn.hoidanit.jobhunter.domain.response.company.CompanyDetailResponse;
+import vn.hoidanit.jobhunter.domain.response.job.JobSummaryResponse;
 import vn.hoidanit.jobhunter.repository.CompanyRepository;
 import vn.hoidanit.jobhunter.repository.UserRepository;
 
@@ -74,5 +77,49 @@ public class CompanyService {
 
     public Optional<Company> findById(long id) {
         return this.companyRepository.findById(id);
+    }
+
+    public CompanyDetailResponse getCompanyDetail(long id) {
+        Company company = companyRepository.findByIdWithJobs(id)
+                .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        return convertToCompanyDetailResponse(company);
+    }
+
+    private CompanyDetailResponse convertToCompanyDetailResponse(Company company) {
+        CompanyDetailResponse dto = new CompanyDetailResponse();
+
+        dto.setId(company.getId());
+        dto.setName(company.getName());
+        dto.setDescription(company.getDescription());
+        dto.setAddress(company.getAddress());
+        dto.setLogo(company.getLogo());
+        dto.setCoverImage(company.getCoverImage());
+        dto.setWebsite(company.getWebsite());
+        dto.setCompanySize(company.getCompanySize());
+        dto.setFoundedDate(company.getFoundedDate());
+        dto.setEmployeeCount(company.getEmployeeCount());
+        dto.setBenefits(company.getBenefits());
+
+        // chỉ lấy job active
+        List<JobSummaryResponse> jobDTOs = company.getJobs()
+                .stream()
+                .filter(Job::isActive)
+                .map(job -> {
+                    JobSummaryResponse j = new JobSummaryResponse();
+                    j.setId(job.getId());
+                    j.setName(job.getName());
+                    j.setLocation(job.getLocation());
+                    j.setSalary(job.getSalary());
+                    j.setQuantity(job.getQuantity());
+                    j.setLevel(job.getLevel());
+                    j.setActive(job.isActive());
+                    return j;
+                })
+                .toList();
+
+        dto.setJobs(jobDTOs);
+
+        return dto;
     }
 }

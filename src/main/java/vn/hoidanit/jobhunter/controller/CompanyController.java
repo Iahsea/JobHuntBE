@@ -20,6 +20,7 @@ import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
 import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
+import vn.hoidanit.jobhunter.domain.response.company.CompanyDetailResponse;
 import vn.hoidanit.jobhunter.service.CompanyService;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 
@@ -60,8 +61,8 @@ public class CompanyController {
 
     @GetMapping("/companies/{id}")
     @ApiMessage("fetch company by id")
-    public ResponseEntity<Company> fetchCompanyById(@PathVariable("id") long id) {
-        Optional<Company> cOptional = this.companyService.findById(id);
-        return ResponseEntity.ok().body(cOptional.get());
+    public ResponseEntity<CompanyDetailResponse> fetchCompanyById(@PathVariable("id") long id) {
+        CompanyDetailResponse dto = companyService.getCompanyDetail(id);
+        return ResponseEntity.ok(dto);
     }
 }
