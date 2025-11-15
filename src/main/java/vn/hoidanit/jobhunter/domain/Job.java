@@ -26,7 +26,9 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
+import vn.hoidanit.jobhunter.util.constant.JobTypeEnum;
 import vn.hoidanit.jobhunter.util.constant.LevelEnum;
+import vn.hoidanit.jobhunter.util.constant.WorkModeEnum;
 
 @Entity
 @Table(name = "jobs")
@@ -45,6 +47,7 @@ public class Job {
 
     private double salary;
 
+    // so luong tuyen dung
     private int quantity;
 
     @Enumerated(EnumType.STRING)
@@ -52,6 +55,17 @@ public class Job {
 
     @Column(columnDefinition = "MEDIUMTEXT")
     private String description;
+
+    // loai hinh cong viec: full-time, part-time, intern, freelance...
+    @Enumerated(EnumType.STRING)
+    private JobTypeEnum jobType;
+
+    // hinh thuc lam viec: onsite, hybrid, remote
+    @Enumerated(EnumType.STRING)
+    private WorkModeEnum workMode;
+
+    // so nam kinh nghiem yeu cau
+    private Integer yearsOfExperience;
 
     private Instant startDate;
     private Instant endDate;
@@ -67,7 +81,11 @@ public class Job {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = { "jobs" })
-    @JoinTable(name = "job_skill", joinColumns = @JoinColumn(name = "job_id"), inverseJoinColumns = @JoinColumn(name = "skill_id"))
+    @JoinTable(
+            name = "job_skill",
+            joinColumns = @JoinColumn(name = "job_id"),
+            inverseJoinColumns = @JoinColumn(name = "skill_id")
+    )
     private List<Skill> skills;
 
     @OneToMany(mappedBy = "job", fetch = FetchType.LAZY)
@@ -79,7 +97,6 @@ public class Job {
         this.createdBy = SecurityUtil.getCurrentUserLogin().isPresent() == true
                 ? SecurityUtil.getCurrentUserLogin().get()
                 : "";
-
         this.createdAt = Instant.now();
     }
 
@@ -88,7 +105,6 @@ public class Job {
         this.updatedBy = SecurityUtil.getCurrentUserLogin().isPresent() == true
                 ? SecurityUtil.getCurrentUserLogin().get()
                 : "";
-
         this.updatedAt = Instant.now();
     }
 }
