@@ -100,6 +100,7 @@ public class CompanyService {
         dto.setFoundedDate(company.getFoundedDate());
         dto.setEmployeeCount(company.getEmployeeCount());
         dto.setBenefits(company.getBenefits());
+        dto.setSocialLinks(company.getSocialLinks());
 
         // chỉ lấy job active
         List<JobSummaryResponse> jobDTOs = company.getJobs()
@@ -114,9 +115,15 @@ public class CompanyService {
                     j.setQuantity(job.getQuantity());
                     j.setLevel(job.getLevel());
                     j.setActive(job.isActive());
+                    j.setWorkModes(job.getWorkModes());
+                    j.setJobType(job.getJobType());
+                    j.setYearsOfExperience(job.getYearsOfExperience());
+                    j.setStartDate(job.getStartDate());
+                    j.setEndDate(job.getEndDate());
                     return j;
                 })
                 .toList();
+
 
         dto.setJobs(jobDTOs);
 
