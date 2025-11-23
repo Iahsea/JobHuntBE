@@ -18,7 +18,10 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
 import vn.hoidanit.jobhunter.util.constant.GenderEnum;
@@ -27,6 +30,9 @@ import vn.hoidanit.jobhunter.util.constant.GenderEnum;
 @Table(name = "users")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,7 +43,7 @@ public class User {
     @NotBlank(message = "email không được để trống")
     private String email;
 
-    @NotBlank(message = "password không được để trống")
+    // @NotBlank(message = "password không được để trống")
     private String password;
 
     private int age;

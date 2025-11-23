@@ -3,6 +3,7 @@ package vn.hoidanit.jobhunter.domain.response;
 import java.time.Instant;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,6 +13,7 @@ import vn.hoidanit.jobhunter.util.constant.GenderEnum;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class ResUserDTO {
     private long id;
     private String email;

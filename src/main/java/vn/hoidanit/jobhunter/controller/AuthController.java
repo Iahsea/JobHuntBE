@@ -16,26 +16,33 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import vn.hoidanit.jobhunter.domain.User;
 import vn.hoidanit.jobhunter.domain.request.ReqLoginDTO;
 import vn.hoidanit.jobhunter.domain.response.ResCreateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResLoginDTO;
+import vn.hoidanit.jobhunter.domain.response.outbound.ExchangeTokenResponse;
 import vn.hoidanit.jobhunter.service.UserService;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
+import vn.hoidanit.jobhunter.service.AuthService;
 
 @RestController
 @RequestMapping("/api/v1")
+@Slf4j
 public class AuthController {
 
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final SecurityUtil securityUtil;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
     @Value("${hoidanit.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenExpiration;
@@ -44,11 +51,13 @@ public class AuthController {
             AuthenticationManagerBuilder authenticationManagerBuilder,
             SecurityUtil securityUtil,
             UserService userService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AuthService authService) {
         this.authenticationManagerBuilder = authenticationManagerBuilder;
         this.securityUtil = securityUtil;
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.authService = authService;
     }
 
     @PostMapping("/auth/login")
@@ -214,5 +223,15 @@ public class AuthController {
         postManUser.setPassword(hashPassword);
         User ericUser = this.userService.handleCreateUser(postManUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.convertToResCreateUserDTO(ericUser));
+    }
+
+    // login with google
+    @PostMapping("/outbound/authentication")
+    ResponseEntity<ResLoginDTO> outboundAuthenticate(
+            @RequestParam("code") String code) {
+        log.info("Received code: {}", code);
+        var result = authService.outboundAuthenticate(code);
+        log.info("OUTBOUND AUTHENTICATE RESULT: {}", result);
+        return ResponseEntity.ok().body(result);
     }
 }
