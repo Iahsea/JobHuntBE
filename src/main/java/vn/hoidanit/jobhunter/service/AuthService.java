@@ -49,38 +49,52 @@ public class AuthService {
     protected final String GRANT_TYPE = "authorization_code";
 
     public ResLoginDTO outboundAuthenticate(String code) {
-        var response = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
-                .code(code)
-                .clientId(CLIENT_ID)
-                .clientSecret(CLIENT_SECRET)
-                .redirectUri(REDIRECT_URI)
-                .grantType(GRANT_TYPE)
-                .build());
+        var response = outboundIdentityClient.exchangeToken(
+                ExchangeTokenRequest.builder()
+                        .code(code)
+                        .clientId(CLIENT_ID)
+                        .clientSecret(CLIENT_SECRET)
+                        .redirectUri(REDIRECT_URI)
+                        .grantType(GRANT_TYPE)
+                        .build());
 
         log.info("TOKEN RESPONSE {}", response);
 
         var userInfo = outboundUserClient.getUserInfo("json", response.getAccessToken());
 
-        if (userRepository.findByEmail(userInfo.getEmail()) != null) {
-            return null;
+        // Kiểm tra user tồn tại
+        var existingUser = userRepository.findByEmail(userInfo.getEmail());
+
+        User user;
+
+        if (existingUser == null) {
+            // User chưa tồn tại → tạo mới
+            user = userRepository.save(
+                    User.builder()
+                            .name(userInfo.getName())
+                            .email(userInfo.getEmail())
+                            .password("") // có thể bỏ
+                            .build());
+        } else {
+            // User đã tồn tại → dùng lại
+            user = existingUser;
         }
 
-        var user = userRepository.save(User.builder()
-                .name(userInfo.getName())
-                .email(userInfo.getEmail())
-                .password("")
-                .build());
-
+        // Build response
         ResLoginDTO res = ResLoginDTO.builder()
-                .user(ResLoginDTO.UserLogin.builder()
-                        .id(user.getId())
-                        .email(user.getEmail())
-                        .name(user.getName())
-                        .build())
+                .user(
+                        ResLoginDTO.UserLogin.builder()
+                                .id(user.getId())
+                                .email(user.getEmail())
+                                .name(user.getName())
+                                .build())
                 .build();
 
-        String access_token = this.securityUtil.createAccessToken(user.getEmail(), res);
-        res.setAccessToken(access_token);
+        // Tạo access token
+        String accessToken = this.securityUtil.createAccessToken(user.getEmail(), res);
+        res.setAccessToken(accessToken);
+
+        log.info("RES LOGIN DTO: {}", res);
 
         return res;
     }
