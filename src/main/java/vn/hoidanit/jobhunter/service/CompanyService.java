@@ -100,6 +100,7 @@ public class CompanyService {
         dto.setFoundedDate(company.getFoundedDate());
         dto.setEmployeeCount(company.getEmployeeCount());
         dto.setBenefits(company.getBenefits());
+        dto.setSocialLinks(company.getSocialLinks());
 
         // chỉ lấy job active
         List<JobSummaryResponse> jobDTOs = company.getJobs()
