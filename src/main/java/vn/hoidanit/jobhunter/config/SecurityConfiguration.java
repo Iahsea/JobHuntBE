@@ -65,6 +65,9 @@ public class SecurityConfiguration {
                                 .requestMatchers(HttpMethod.GET, "/api/v1/jobs/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/skills/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/public/images/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/files/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/resumes/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/resumes/**").permitAll()
 
                                 .anyRequest().authenticated())
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults())

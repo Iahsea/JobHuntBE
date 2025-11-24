@@ -82,4 +82,21 @@ public class JobController {
 
         return ResponseEntity.ok().body(this.jobService.fetchAll(spec, pageable));
     }
+
+    @GetMapping("/jobs/company/{id}")
+    @ApiMessage("Get job by company id with pagination")
+    public ResponseEntity<ResultPaginationDTO> getJobByCompanyId(
+            @PathVariable Long id,
+            @Filter Specification<Job> spec,
+            Pageable pageable) {
+        Specification<Job> specByCompany = (root, query, cb) ->
+                cb.equal(root.get("company").get("id"), id);
+
+        if (spec != null) {
+            specByCompany = specByCompany.and(spec);
+        }
+
+        ResultPaginationDTO result = jobService.fetchAll(specByCompany, pageable);
+        return ResponseEntity.ok(result);
+    }
 }

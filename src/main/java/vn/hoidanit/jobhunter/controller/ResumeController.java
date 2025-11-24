@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -140,5 +141,40 @@ public class ResumeController {
     public ResponseEntity<ResultPaginationDTO> fetchResumeByUser(Pageable pageable) {
 
         return ResponseEntity.ok().body(this.resumeService.fetchResumeByUser(pageable));
+    }
+
+    @GetMapping("/resumes/jobs/{id}")
+    @ApiMessage("Get list of resume for job")
+    public ResponseEntity<ResultPaginationDTO> fetchAllResumeByJobId(
+            @PathVariable Long id,
+            @Filter Specification<Resume> spec,
+            Pageable pageable
+    ){
+        List<Long> arrJobIds = null;
+        String email = SecurityUtil.getCurrentUserLogin().isPresent() == true
+                ? SecurityUtil.getCurrentUserLogin().get()
+                : "";
+        User currentUser = this.userService.handleGetUserByUsername(email);
+        if (currentUser != null) {
+            Company userCompany = currentUser.getCompany();
+            if (userCompany != null) {
+                List<Job> companyJobs = userCompany.getJobs();
+                if (companyJobs != null && companyJobs.size() > 0) {
+                    arrJobIds = companyJobs.stream().map(x -> x.getId())
+                            .collect(Collectors.toList());
+                }
+            }
+        }
+
+        if (arrJobIds == null || !arrJobIds.contains(id)) {
+            throw new AccessDeniedException("You do not have permission to view this job's resumes");
+        }
+
+        Specification<Resume> specByJob = (root, query, cb) ->
+                cb.equal(root.get("job").get("id"), id);
+
+        Specification<Resume> finalSpec = spec.and(specByJob);
+
+        return ResponseEntity.ok().body(this.resumeService.fetchAllResume(finalSpec, pageable));
     }
 }
