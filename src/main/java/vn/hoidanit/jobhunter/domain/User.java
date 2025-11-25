@@ -56,6 +56,9 @@ public class User {
     @Column(columnDefinition = "MEDIUMTEXT")
     private String refreshToken;
 
+    @lombok.Builder.Default
+    private boolean verified = false;
+
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;

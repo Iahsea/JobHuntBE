@@ -28,6 +28,8 @@ import vn.hoidanit.jobhunter.domain.response.ResCreateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResLoginDTO;
 import vn.hoidanit.jobhunter.domain.response.outbound.ExchangeTokenResponse;
 import vn.hoidanit.jobhunter.service.UserService;
+import vn.hoidanit.jobhunter.service.OtpService;
+import vn.hoidanit.jobhunter.service.EmailService;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
@@ -41,6 +43,8 @@ public class AuthController {
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final SecurityUtil securityUtil;
     private final UserService userService;
+    private final OtpService otpService;
+    private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
 
@@ -51,11 +55,15 @@ public class AuthController {
             AuthenticationManagerBuilder authenticationManagerBuilder,
             SecurityUtil securityUtil,
             UserService userService,
+            OtpService otpService,
+            EmailService emailService,
             PasswordEncoder passwordEncoder,
             AuthService authService) {
         this.authenticationManagerBuilder = authenticationManagerBuilder;
         this.securityUtil = securityUtil;
         this.userService = userService;
+        this.otpService = otpService;
+        this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
         this.authService = authService;
     }
@@ -213,15 +221,30 @@ public class AuthController {
     @PostMapping("/auth/register")
     @ApiMessage("Register a new user")
     public ResponseEntity<ResCreateUserDTO> register(@Valid @RequestBody User postManUser) throws IdInvalidException {
-        boolean isEmailExist = this.userService.isEmailExist(postManUser.getEmail());
-        if (isEmailExist) {
+        User existingUser = this.userService.handleGetUserByUsername(postManUser.getEmail());
+        if (existingUser != null && existingUser.isVerified()) {
             throw new IdInvalidException(
                     "Email " + postManUser.getEmail() + "đã tồn tại, vui lòng sử dụng email khác.");
         }
 
         String hashPassword = this.passwordEncoder.encode(postManUser.getPassword());
         postManUser.setPassword(hashPassword);
-        User ericUser = this.userService.handleCreateUser(postManUser);
+        // ensure user is created as not verified
+        User ericUser = new User();
+        if (existingUser == null) {
+            postManUser.setVerified(false);
+            ericUser = this.userService.handleCreateUser(postManUser);
+        } else {
+            existingUser.setName(postManUser.getName());
+            existingUser.setPassword(postManUser.getPassword());
+            ericUser = this.userService.handleUpdateUser(existingUser);
+        }
+
+        // create OTP and send to user for verification (valid 5 minutes)
+        var otp = this.otpService.createOtpForEmail(ericUser.getEmail(), 5);
+        String subject = "Mã OTP đăng ký - JobHunter";
+        String content = otp.getCode();
+        this.emailService.sendEmailFromTemplateSync(ericUser.getEmail(), subject, "otp", ericUser.getName(), content);
         return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.convertToResCreateUserDTO(ericUser));
     }
 

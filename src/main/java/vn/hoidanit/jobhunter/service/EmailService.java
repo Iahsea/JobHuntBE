@@ -62,6 +62,8 @@ public class EmailService {
         Context context = new Context();
         context.setVariable("name", username);
         context.setVariable("jobs", value);
+        // also expose as `content` for templates that expect a single value (eg OTP)
+        context.setVariable("content", value);
 
         String content = templateEngine.process(templateName, context);
         this.sendEmailSync(to, subject, content, false, true);

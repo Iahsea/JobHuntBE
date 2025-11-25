@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>OTP - JobHunter</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; color: #333; }
+        .container { max-width: 640px; margin: 0 auto; padding: 24px; text-align: center; }
+        .brand { font-size: 28px; font-weight: 700; color: #006aff; margin-bottom: 12px; }
+        .intro { font-size: 16px; margin-bottom: 18px; }
+        .otp { font-size: 52px; letter-spacing: 12px; color: #006aff; font-weight: 700; margin: 18px 0; }
+        .note { font-size: 13px; color: #666; margin-top: 18px; }
+        .highlight { background: #fff3cd; padding: 2px 6px; border-radius: 3px; }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="brand">JobHunter</div>
+        <div class="intro">Xin chào <span th:text="${name}">user</span>,</div>
+        <div class="intro">Chúng tôi nhận được yêu cầu đăng ký/khôi phục tài khoản. Vui lòng sử dụng mã OTP dưới đây để xác thực:</div>
+
+        <div class="otp" th:text="${content}">123456</div>
+
+        <div class="note">Mã <span class="highlight">OTP</span> có hiệu lực trong 5 phút. Lưu ý: KHÔNG chia sẻ mã này với bất kỳ ai.</div>
+
+        <div class="note">Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua hoặc liên hệ bộ phận hỗ trợ của chúng tôi.</div>
+    </div>
+</body>
+
+</html>
