@@ -17,6 +17,7 @@ import vn.hoidanit.jobhunter.service.SubscriberService;
 import vn.hoidanit.jobhunter.service.OtpService;
 import vn.hoidanit.jobhunter.service.UserService;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
+import vn.hoidanit.jobhunter.util.error.IdInvalidException;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -62,10 +63,11 @@ public class EmailController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is required");
         }
 
-        User user = this.userService.handleGetUserByUsername(email);
-        if (user != null && user.isVerified()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already registered");
-        }
+        // User user = this.userService.handleGetUserByUsername(email);
+        // if (user != null && user.isVerified()) {
+        // return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already
+        // registered");
+        // }
 
         // create otp valid for 5 minutes
         var otp = this.otpService.createOtpForEmail(email, 5);
@@ -79,9 +81,10 @@ public class EmailController {
 
     @PostMapping("/email/verify-otp")
     @ApiMessage("Verify OTP for registration")
-    public ResponseEntity<String> verifyOtp(@RequestParam("email") String email, @RequestParam("code") String code) {
+    public ResponseEntity<String> verifyOtp(@RequestParam("email") String email, @RequestParam("code") String code)
+            throws IdInvalidException {
 
-        log.info("Verifying OTP for email: {}", email);
+        log.info(">>>>>>>>>Verifying OTP for email: {}", email);
         log.info("OTP code provided: {}", code);
         if (email == null || email.isBlank() || code == null || code.isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email and code are required");
@@ -91,6 +94,8 @@ public class EmailController {
         if (!valid) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired OTP");
         }
+
+        log.info("valid {}", valid);
 
         // mark user as verified
         this.userService.verifyUserByEmail(email);

@@ -13,7 +13,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -256,5 +259,34 @@ public class AuthController {
         var result = authService.outboundAuthenticate(code);
         log.info("OUTBOUND AUTHENTICATE RESULT: {}", result);
         return ResponseEntity.ok().body(result);
+    }
+
+    @GetMapping("/auth/users")
+    @ApiMessage("fetch all users")
+    public ResponseEntity<Void> getUserByEmail(
+            @RequestParam("email") String email) throws IdInvalidException {
+
+        boolean isEmailExist = this.userService.isEmailExist(email);
+
+        if (!isEmailExist) {
+            throw new IdInvalidException(
+                    "Email " + email + " chưa được đăng ký.");
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PatchMapping("/auth/users/change-password")
+    @ApiMessage("Change user password")
+    public ResponseEntity<Void> changeUserPassword(
+            @RequestParam("username") String username,
+            @RequestParam("newPassword") String newPassword) throws IdInvalidException {
+        User user = this.userService.handleGetUserByUsername(username);
+        if (user == null) {
+            throw new IdInvalidException("User với username = " + username + " không tồn tại");
+        }
+        String hashPassword = this.passwordEncoder.encode(newPassword);
+        this.userService.changeUserPassword(user, hashPassword);
+        return ResponseEntity.ok().build();
     }
 }

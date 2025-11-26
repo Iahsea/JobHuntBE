@@ -205,4 +205,10 @@ public class UserService {
             this.userRepository.save(currentUser);
         }
     }
+
+    public void changeUserPassword(User user, String hashPassword) {
+        // TODO Auto-generated method stub
+        user.setPassword(hashPassword);
+        this.userRepository.save(user);
+    }
 }
