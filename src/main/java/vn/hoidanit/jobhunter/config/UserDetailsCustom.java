@@ -25,10 +25,15 @@ public class UserDetailsCustom implements UserDetailsService {
             throw new UsernameNotFoundException("Username/password không hợp lệ");
         }
 
+        boolean enabled = user.isVerified();
         return new User(
-                user.getEmail(),
-                user.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
+            user.getEmail(),
+            user.getPassword(),
+            enabled,
+            true,
+            true,
+            true,
+            Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
 
     }
 

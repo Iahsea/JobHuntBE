@@ -52,7 +52,9 @@ public class SecurityConfiguration {
                 "/api/v1/email/**",
                 "/v3/api-docs/**",
                 "/swagger-ui/**",
-                "/swagger-ui.html"
+                "/swagger-ui.html",
+                "/api/v1/outbound/authentication/**",
+                "/api/v1/auth/users/**"
         };
 
         http

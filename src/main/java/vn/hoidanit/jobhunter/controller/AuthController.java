@@ -13,29 +13,43 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import vn.hoidanit.jobhunter.domain.User;
 import vn.hoidanit.jobhunter.domain.request.ReqLoginDTO;
 import vn.hoidanit.jobhunter.domain.response.ResCreateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResLoginDTO;
+import vn.hoidanit.jobhunter.domain.response.outbound.ExchangeTokenResponse;
 import vn.hoidanit.jobhunter.service.UserService;
+import vn.hoidanit.jobhunter.service.OtpService;
+import vn.hoidanit.jobhunter.service.EmailService;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
+import vn.hoidanit.jobhunter.service.AuthService;
 
 @RestController
 @RequestMapping("/api/v1")
+@Slf4j
 public class AuthController {
 
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final SecurityUtil securityUtil;
     private final UserService userService;
+    private final OtpService otpService;
+    private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
     @Value("${hoidanit.jwt.refresh-token-validity-in-seconds}")
     private long refreshTokenExpiration;
@@ -44,11 +58,17 @@ public class AuthController {
             AuthenticationManagerBuilder authenticationManagerBuilder,
             SecurityUtil securityUtil,
             UserService userService,
-            PasswordEncoder passwordEncoder) {
+            OtpService otpService,
+            EmailService emailService,
+            PasswordEncoder passwordEncoder,
+            AuthService authService) {
         this.authenticationManagerBuilder = authenticationManagerBuilder;
         this.securityUtil = securityUtil;
         this.userService = userService;
+        this.otpService = otpService;
+        this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
+        this.authService = authService;
     }
 
     @PostMapping("/auth/login")
@@ -204,15 +224,69 @@ public class AuthController {
     @PostMapping("/auth/register")
     @ApiMessage("Register a new user")
     public ResponseEntity<ResCreateUserDTO> register(@Valid @RequestBody User postManUser) throws IdInvalidException {
-        boolean isEmailExist = this.userService.isEmailExist(postManUser.getEmail());
-        if (isEmailExist) {
+        User existingUser = this.userService.handleGetUserByUsername(postManUser.getEmail());
+        if (existingUser != null && existingUser.isVerified()) {
             throw new IdInvalidException(
                     "Email " + postManUser.getEmail() + "đã tồn tại, vui lòng sử dụng email khác.");
         }
 
         String hashPassword = this.passwordEncoder.encode(postManUser.getPassword());
         postManUser.setPassword(hashPassword);
-        User ericUser = this.userService.handleCreateUser(postManUser);
+        // ensure user is created as not verified
+        User ericUser = new User();
+        if (existingUser == null) {
+            postManUser.setVerified(false);
+            ericUser = this.userService.handleCreateUser(postManUser);
+        } else {
+            existingUser.setName(postManUser.getName());
+            existingUser.setPassword(postManUser.getPassword());
+            ericUser = this.userService.handleUpdateUser(existingUser);
+        }
+
+        // create OTP and send to user for verification (valid 5 minutes)
+        var otp = this.otpService.createOtpForEmail(ericUser.getEmail(), 5);
+        String subject = "Mã OTP đăng ký - JobHunter";
+        String content = otp.getCode();
+        this.emailService.sendEmailFromTemplateSync(ericUser.getEmail(), subject, "otp", ericUser.getName(), content);
         return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.convertToResCreateUserDTO(ericUser));
+    }
+
+    // login with google
+    @PostMapping("/outbound/authentication")
+    ResponseEntity<ResLoginDTO> outboundAuthenticate(
+            @RequestParam("code") String code) {
+        log.info("Received code: {}", code);
+        var result = authService.outboundAuthenticate(code);
+        log.info("OUTBOUND AUTHENTICATE RESULT: {}", result);
+        return ResponseEntity.ok().body(result);
+    }
+
+    @GetMapping("/auth/users")
+    @ApiMessage("fetch all users")
+    public ResponseEntity<Void> getUserByEmail(
+            @RequestParam("email") String email) throws IdInvalidException {
+
+        boolean isEmailExist = this.userService.isEmailExist(email);
+
+        if (!isEmailExist) {
+            throw new IdInvalidException(
+                    "Email " + email + " chưa được đăng ký.");
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PatchMapping("/auth/users/change-password")
+    @ApiMessage("Change user password")
+    public ResponseEntity<Void> changeUserPassword(
+            @RequestParam("username") String username,
+            @RequestParam("newPassword") String newPassword) throws IdInvalidException {
+        User user = this.userService.handleGetUserByUsername(username);
+        if (user == null) {
+            throw new IdInvalidException("User với username = " + username + " không tồn tại");
+        }
+        String hashPassword = this.passwordEncoder.encode(newPassword);
+        this.userService.changeUserPassword(user, hashPassword);
+        return ResponseEntity.ok().build();
     }
 }
