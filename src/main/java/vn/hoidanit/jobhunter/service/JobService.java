@@ -109,10 +109,15 @@ public class JobService {
         jobInDB.setSalary(j.getSalary());
         jobInDB.setQuantity(j.getQuantity());
         jobInDB.setLocation(j.getLocation());
+        jobInDB.setDescription(j.getDescription());
+        jobInDB.setYearsOfExperience(j.getYearsOfExperience());
         jobInDB.setLevel(j.getLevel());
+        jobInDB.setJobType(j.getJobType());
         jobInDB.setStartDate(j.getStartDate());
         jobInDB.setEndDate(j.getEndDate());
         jobInDB.setActive(j.isActive());
+        jobInDB.setWorkModes(j.getWorkModes());
+
 
         // update job
         Job currentJob = this.jobRepository.save(jobInDB);
@@ -130,12 +135,13 @@ public class JobService {
         dto.setActive(currentJob.isActive());
         dto.setUpdatedAt(currentJob.getUpdatedAt());
         dto.setUpdatedBy(currentJob.getUpdatedBy());
+        dto.setDescription(currentJob.getDescription());
+        dto.setJobType(currentJob.getJobType());
+        dto.setWorkModes(currentJob.getWorkModes());
+        dto.setYearsOfExperience(currentJob.getYearsOfExperience());
 
         if (currentJob.getSkills() != null) {
-            List<String> skills = currentJob.getSkills()
-                    .stream().map(item -> item.getName())
-                    .collect(Collectors.toList());
-            dto.setSkills(skills);
+            dto.setSkills(currentJob.getSkills());
         }
 
         return dto;
