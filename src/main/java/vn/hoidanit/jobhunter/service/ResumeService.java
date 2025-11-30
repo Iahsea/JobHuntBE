@@ -106,13 +106,29 @@ public class ResumeService {
         res.setCreatedBy(resume.getCreatedBy());
         res.setUpdatedAt(resume.getUpdatedAt());
         res.setUpdatedBy(resume.getUpdatedBy());
+        res.setIntroduction(resume.getIntroduction());
+        res.setApplyReason(resume.getApplyReason());
+        res.setSocialLinks(resume.getSocialLinks());
 
         if (resume.getJob() != null) {
             res.setCompanyName(resume.getJob().getCompany().getName());
         }
 
-        res.setUser(new ResFetchResumeDTO.UserResume(resume.getUser().getId(), resume.getUser().getName()));
-        res.setJob(new ResFetchResumeDTO.JobResume(resume.getJob().getId(), resume.getJob().getName()));
+        res.setUser(new ResFetchResumeDTO.UserResume(
+                resume.getUser().getId(),
+                resume.getUser().getName(),
+                resume.getUser().getAddress(),
+                resume.getUser().getAge(),
+                resume.getUser().getGender()
+        ));
+        res.setJob(new ResFetchResumeDTO.JobResume(
+                resume.getJob().getId(),
+                resume.getJob().getName(),
+                resume.getJob().getLocation(),
+                resume.getJob().getSalary(),
+                resume.getJob().getJobType()
+
+        ));
 
         return res;
     }

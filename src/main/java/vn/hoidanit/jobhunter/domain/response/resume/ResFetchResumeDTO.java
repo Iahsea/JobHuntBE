@@ -6,6 +6,9 @@ import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import vn.hoidanit.jobhunter.domain.SocialLinks;
+import vn.hoidanit.jobhunter.util.constant.GenderEnum;
+import vn.hoidanit.jobhunter.util.constant.JobTypeEnum;
 import vn.hoidanit.jobhunter.util.constant.ResumeStateEnum;
 
 @Getter
@@ -24,6 +27,10 @@ public class ResFetchResumeDTO {
     private String createdBy;
     private String updatedBy;
 
+    private String introduction;
+    private String applyReason;
+    private SocialLinks socialLinks;
+
     private String companyName;
     private UserResume user;
     private JobResume job;
@@ -34,6 +41,9 @@ public class ResFetchResumeDTO {
     public static class UserResume {
         private long id;
         private String name;
+        private String address;
+        private int age;
+        private GenderEnum gender;
     }
 
     @Getter
@@ -42,5 +52,8 @@ public class ResFetchResumeDTO {
     public static class JobResume {
         private long id;
         private String name;
+        private String location;
+        private double salary;
+        private JobTypeEnum jobType;
     }
 }
