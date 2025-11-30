@@ -60,6 +60,8 @@ public class SecurityConfiguration {
         http
                 .csrf(c -> c.disable())
                 .cors(Customizer.withDefaults())
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+
                 .authorizeHttpRequests(
                         authz -> authz
                                 .requestMatchers(whiteList).permitAll()
@@ -67,6 +69,7 @@ public class SecurityConfiguration {
                                 .requestMatchers(HttpMethod.GET, "/api/v1/jobs/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/skills/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/public/images/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/public/resume/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/v1/files/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/v1/resumes/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/resumes/**").permitAll()

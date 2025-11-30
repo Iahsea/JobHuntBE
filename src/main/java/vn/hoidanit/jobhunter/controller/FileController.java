@@ -161,4 +161,36 @@ public class FileController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/public/resume/{resumeName}")
+    @ApiMessage("View a resume file")
+    public ResponseEntity<?> viewResume(@PathVariable(name = "resumeName") String resumeName) {
+        try {
+            java.nio.file.Path filePath = Paths.get("public/resume/" + resumeName);
+            UrlResource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                // Xác định MIME type
+                String contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+
+                String name = resumeName.toLowerCase();
+                if (name.endsWith(".pdf")) {
+                    contentType = MediaType.APPLICATION_PDF_VALUE;
+                } else if (name.endsWith(".doc")) {
+                    contentType = "application/msword";
+                } else if (name.endsWith(".docx")) {
+                    contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
 }
