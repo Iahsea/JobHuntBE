@@ -240,7 +240,7 @@ public class AuthController {
         } else {
             existingUser.setName(postManUser.getName());
             existingUser.setPassword(postManUser.getPassword());
-            ericUser = this.userService.handleUpdateUser(existingUser);
+            ericUser = this.userService.handleUpdateUser(existingUser.getId(), existingUser);
         }
 
         // create OTP and send to user for verification (valid 5 minutes)

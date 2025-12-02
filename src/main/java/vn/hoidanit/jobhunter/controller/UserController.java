@@ -1,8 +1,12 @@
 package vn.hoidanit.jobhunter.controller;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,8 +17,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.mysql.cj.x.protobuf.MysqlxCrud.Update;
 import com.turkraft.springfilter.boot.Filter;
 
 import jakarta.validation.Valid;
@@ -23,6 +30,7 @@ import vn.hoidanit.jobhunter.domain.response.ResCreateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUpdateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
+import vn.hoidanit.jobhunter.service.FileService;
 import vn.hoidanit.jobhunter.service.UserService;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
@@ -34,9 +42,12 @@ public class UserController {
 
     private final PasswordEncoder passwordEncoder;
 
-    public UserController(UserService userService, PasswordEncoder passwordEncoder) {
+    private final FileService fileService;
+
+    public UserController(UserService userService, PasswordEncoder passwordEncoder, FileService fileService) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.fileService = fileService;
     }
 
     @PostMapping("/users")
@@ -91,14 +102,41 @@ public class UserController {
                 this.userService.fetchAllUser(spec, pageable));
     }
 
-    @PutMapping("/users")
+    @PutMapping(value = "/users/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiMessage("Update a user")
-    public ResponseEntity<ResUpdateUserDTO> updateUser(@RequestBody User user) throws IdInvalidException {
-        User ericUser = this.userService.handleUpdateUser(user);
-        if (ericUser == null) {
-            throw new IdInvalidException("User với id = " + user.getId() + " không tồn tại");
+    public ResponseEntity<?> updateUser(
+            @PathVariable("id") Long id,
+            @RequestPart(value = "user", required = false) User updatedUserDTO,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar) throws Exception {
+
+        // lưu file
+        String filename = null;
+        try {
+            if (avatar != null && !avatar.isEmpty()) {
+                if (avatar.getSize() > 10 * 1024 * 1024) { // >10MB
+                    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                            .body("File size exceeds the maximum limit of 10MB");
+                }
+
+                String fileName = avatar.getOriginalFilename();
+                List<String> allowedExtensions = Arrays.asList("pdf", "jpg", "jpeg", "png", "doc", "docx");
+                boolean isValidExtension = allowedExtensions.stream()
+                        .anyMatch(ext -> fileName.toLowerCase().endsWith("." + ext));
+
+                if (!isValidExtension) {
+                    throw new Exception("Invalid file extension. Only allow " + allowedExtensions.toString());
+                }
+
+                filename = this.fileService.storeFile(avatar, "avatar");
+            }
+
+            updatedUserDTO.setAvatar(filename);
+            User updatedUser = userService.handleUpdateUser(id, updatedUserDTO);
+
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(this.userService.convertToResUpdateUserDTO(ericUser));
     }
 
 }

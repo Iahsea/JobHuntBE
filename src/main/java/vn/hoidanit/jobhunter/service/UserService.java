@@ -12,6 +12,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import lombok.extern.slf4j.Slf4j;
 import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.Role;
 import vn.hoidanit.jobhunter.domain.User;
@@ -22,6 +23,7 @@ import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
 import vn.hoidanit.jobhunter.repository.UserRepository;
 
 @Service
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -87,13 +89,34 @@ public class UserService {
         return rs;
     }
 
-    public User handleUpdateUser(User reqUser) {
-        User currentUser = this.fetchUserById(reqUser.getId());
+    public User handleUpdateUser(Long id, User reqUser) {
+        log.info("Request user for update: {}", reqUser);
+        User currentUser = this.fetchUserById(id);
         if (currentUser != null) {
-            currentUser.setAddress(reqUser.getAddress());
-            currentUser.setGender(reqUser.getGender());
-            currentUser.setAge(reqUser.getAge());
-            currentUser.setName(reqUser.getName());
+            if (reqUser.getEmail() != null && !reqUser.getEmail().isBlank()) {
+                currentUser.setEmail(reqUser.getEmail());
+            }
+            if (reqUser.getAddress() != null && !reqUser.getAddress().isBlank()) {
+                currentUser.setAddress(reqUser.getAddress());
+            }
+            if (reqUser.getGender() != null) {
+                currentUser.setGender(reqUser.getGender());
+            }
+            if (reqUser.getAge() != 0) {
+                currentUser.setAge(reqUser.getAge());
+            }
+            if (reqUser.getName() != null && !reqUser.getName().isBlank()) {
+                currentUser.setName(reqUser.getName());
+            }
+            if (reqUser.getAvatar() != null && !reqUser.getAvatar().isBlank()) {
+                currentUser.setAvatar(reqUser.getAvatar());
+            }
+            if (reqUser.getDateOfBirth() != null) {
+                currentUser.setDateOfBirth(reqUser.getDateOfBirth());
+            }
+            if (reqUser.getPhoneNumber() != null && !reqUser.getPhoneNumber().isBlank()) {
+                currentUser.setPhoneNumber(reqUser.getPhoneNumber());
+            }
 
             // check company
             if (reqUser.getCompany() != null) {
@@ -109,6 +132,7 @@ public class UserService {
 
             // update
             currentUser = this.userRepository.save(currentUser);
+            log.info("User after update: {}", currentUser);
         }
         return currentUser;
     }

@@ -35,57 +35,41 @@ import vn.hoidanit.jobhunter.util.constant.GenderEnum;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class User {
+public class UserProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    private String name;
+    private String title;
 
-    @NotBlank(message = "email không được để trống")
-    private String email;
+    private String experience;
 
-    // @NotBlank(message = "password không được để trống")
-    private String password;
+    private String education;
 
-    private int age;
+    private String personalWebsite;
 
-    private String avatar;
+    private String nationality;
 
-    @Enumerated(EnumType.STRING)
-    private GenderEnum gender;
+    private String maritalStatus;
 
-    private String address;
+    private String biography;
 
-    private Date dateOfBirth;
+    private String facebookLink;
 
-    private String phoneNumber;
+    private String linkedinLink;
 
-    @Column(columnDefinition = "MEDIUMTEXT")
-    private String refreshToken;
+    private String twitterLink;
 
-    @lombok.Builder.Default
-    private boolean verified = false;
+    private String githubLink;
+
+    @OneToOne
+    @JoinColumn(name = "user_id") // khóa ngoại
+    private User user;
 
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;
     private String updatedBy;
-
-    @ManyToOne
-    @JoinColumn(name = "company_id")
-    private Company company;
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @JsonIgnore
-    List<Resume> resumes;
-
-    @ManyToOne
-    @JoinColumn(name = "role_id")
-    private Role role;
-
-    @OneToOne(mappedBy = "user")
-    private UserProfile profile;
 
     @PrePersist
     public void handleBeforeCreate() {
