@@ -67,6 +67,8 @@ public class User {
     @lombok.Builder.Default
     private boolean verified = false;
 
+    private boolean isGoogleAccount = false;
+
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;
@@ -78,6 +80,10 @@ public class User {
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @JsonIgnore
+    List<MyCv> myCvs;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnore
     List<Resume> resumes;
 
     @ManyToOne
@@ -85,6 +91,7 @@ public class User {
     private Role role;
 
     @OneToOne(mappedBy = "user")
+    @JsonIgnore
     private UserProfile profile;
 
     @PrePersist

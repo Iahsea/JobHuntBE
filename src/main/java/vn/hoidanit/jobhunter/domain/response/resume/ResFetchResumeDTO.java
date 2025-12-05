@@ -55,5 +55,6 @@ public class ResFetchResumeDTO {
         private String location;
         private double salary;
         private JobTypeEnum jobType;
+        private String jobImage;
     }
 }

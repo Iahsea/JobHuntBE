@@ -18,6 +18,7 @@ import com.turkraft.springfilter.boot.Filter;
 import com.turkraft.springfilter.builder.FilterBuilder;
 import com.turkraft.springfilter.converter.FilterSpecificationConverter;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.Job;
 import vn.hoidanit.jobhunter.domain.Resume;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/api/v1")
+@Slf4j
 public class ResumeController {
 
     private final ResumeService resumeService;
@@ -143,38 +145,13 @@ public class ResumeController {
         return ResponseEntity.ok().body(this.resumeService.fetchResumeByUser(pageable));
     }
 
-    @GetMapping("/resumes/jobs/{id}")
-    @ApiMessage("Get list of resume for job")
-    public ResponseEntity<ResultPaginationDTO> fetchAllResumeByJobId(
-            @PathVariable Long id,
-            @Filter Specification<Resume> spec,
-            Pageable pageable
-    ){
-        List<Long> arrJobIds = null;
-        String email = SecurityUtil.getCurrentUserLogin().isPresent() == true
-                ? SecurityUtil.getCurrentUserLogin().get()
-                : "";
-        User currentUser = this.userService.handleGetUserByUsername(email);
-        if (currentUser != null) {
-            Company userCompany = currentUser.getCompany();
-            if (userCompany != null) {
-                List<Job> companyJobs = userCompany.getJobs();
-                if (companyJobs != null && companyJobs.size() > 0) {
-                    arrJobIds = companyJobs.stream().map(x -> x.getId())
-                            .collect(Collectors.toList());
-                }
-            }
-        }
-
-        if (arrJobIds == null || !arrJobIds.contains(id)) {
-            throw new AccessDeniedException("You do not have permission to view this job's resumes");
-        }
-
-        Specification<Resume> specByJob = (root, query, cb) ->
-                cb.equal(root.get("job").get("id"), id);
-
-        Specification<Resume> finalSpec = spec.and(specByJob);
-
-        return ResponseEntity.ok().body(this.resumeService.fetchAllResume(finalSpec, pageable));
+    @GetMapping("/resumes/users/{id}")
+    @ApiMessage("Get list of resume for user")
+    public ResponseEntity<ResultPaginationDTO> fetchAllResumeByUser(
+            @PathVariable("id") Long id,
+            Pageable pageable) {
+        User user = this.userService.fetchUserById(id);
+        log.info("Fetch resumes for user: {}", user.getEmail());
+        return ResponseEntity.ok().body(this.resumeService.fetchAllResumeByUserId(user.getId(), pageable));
     }
 }

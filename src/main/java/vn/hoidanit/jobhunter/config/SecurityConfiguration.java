@@ -55,7 +55,8 @@ public class SecurityConfiguration {
                 "/swagger-ui.html",
                 "/api/v1/outbound/authentication/**",
                 "/api/v1/auth/users/**",
-                "/api/v1/users/**"
+                "/api/v1/users/**",
+                "/api/v1/**"
         };
 
         http

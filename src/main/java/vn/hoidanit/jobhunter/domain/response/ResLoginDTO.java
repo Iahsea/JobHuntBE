@@ -1,5 +1,7 @@
 package vn.hoidanit.jobhunter.domain.response;
 
+import java.sql.Date;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.hoidanit.jobhunter.domain.Role;
+import vn.hoidanit.jobhunter.util.constant.GenderEnum;
 
 @Getter
 @Setter
@@ -29,6 +32,11 @@ public class ResLoginDTO {
         private String email;
         private String name;
         private Role role;
+        private String avatar;
+        private String phoneNumber;
+        private Date dateOfBirth;
+        private GenderEnum gender;
+        private boolean isUserGoogleAccount;
     }
 
     @Getter

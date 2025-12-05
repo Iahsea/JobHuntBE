@@ -24,8 +24,12 @@ import org.springframework.web.multipart.MultipartFile;
 import com.mysql.cj.x.protobuf.MysqlxCrud.Update;
 import com.turkraft.springfilter.boot.Filter;
 
+import feign.Response;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import vn.hoidanit.jobhunter.domain.MyCv;
 import vn.hoidanit.jobhunter.domain.User;
+import vn.hoidanit.jobhunter.domain.request.ChangePasswordRequest;
 import vn.hoidanit.jobhunter.domain.response.ResCreateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUpdateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUserDTO;
@@ -34,9 +38,11 @@ import vn.hoidanit.jobhunter.service.FileService;
 import vn.hoidanit.jobhunter.service.UserService;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/v1")
+@Slf4j
 public class UserController {
     private final UserService userService;
 
@@ -44,10 +50,14 @@ public class UserController {
 
     private final FileService fileService;
 
-    public UserController(UserService userService, PasswordEncoder passwordEncoder, FileService fileService) {
+    private final vn.hoidanit.jobhunter.service.MyCvService myCvService;
+
+    public UserController(UserService userService, PasswordEncoder passwordEncoder, FileService fileService,
+            vn.hoidanit.jobhunter.service.MyCvService myCvService) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.fileService = fileService;
+        this.myCvService = myCvService;
     }
 
     @PostMapping("/users")
@@ -137,6 +147,42 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @PatchMapping("/users/{id}/change-password")
+    @ApiMessage("Change user password")
+    public ResponseEntity<String> changeUserPassword(
+            @PathVariable("id") Long id,
+            @RequestBody ChangePasswordRequest changePasswordRequest) throws IdInvalidException {
+
+        log.info("Change password request: {}", changePasswordRequest.getCurrentPassword());
+        log.info("Change password request: {}", changePasswordRequest.getNewPassword());
+
+        User currentUser = this.userService.fetchUserById(id);
+        if (currentUser == null) {
+            throw new IdInvalidException("User với id = " + id + " không tồn tại");
+        }
+
+        // kiểm tra mật khẩu cũ
+        boolean isMatch = this.passwordEncoder.matches(changePasswordRequest.getCurrentPassword(),
+                currentUser.getPassword());
+        if (!isMatch) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Current password is incorrect");
+        }
+
+        // cập nhật mật khẩu mới
+        String hashedNewPassword = this.passwordEncoder.encode(changePasswordRequest.getNewPassword());
+        currentUser.setPassword(hashedNewPassword);
+        this.userService.handleUpdateUser(id, currentUser);
+
+        return ResponseEntity.ok("Đổi mật khẩu thành công");
+    }
+
+    @GetMapping("/users/{id}/my-cv")
+    public ResponseEntity<List<MyCv>> getAllMyCv(@PathVariable("id") Long id) {
+        User user = this.userService.fetchUserById(id);
+        List<MyCv> myCvs = this.myCvService.getMyCvsByUser(user);
+        return ResponseEntity.ok(myCvs);
     }
 
 }

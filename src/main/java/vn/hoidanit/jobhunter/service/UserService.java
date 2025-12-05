@@ -12,10 +12,13 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import vn.hoidanit.jobhunter.domain.Company;
+import vn.hoidanit.jobhunter.domain.MyCv;
 import vn.hoidanit.jobhunter.domain.Role;
 import vn.hoidanit.jobhunter.domain.User;
+import vn.hoidanit.jobhunter.domain.UserProfile;
 import vn.hoidanit.jobhunter.domain.response.ResCreateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUpdateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUserDTO;
@@ -29,13 +32,16 @@ public class UserService {
     private final UserRepository userRepository;
     private final CompanyService companyService;
     private final RoleService roleService;
+    private final UserProfileService userProfileService;
 
     public UserService(UserRepository userRepository,
             CompanyService companyService,
-            RoleService roleService) {
+            RoleService roleService,
+            UserProfileService userProfileService) {
         this.userRepository = userRepository;
         this.companyService = companyService;
         this.roleService = roleService;
+        this.userProfileService = userProfileService;
     }
 
     public User handleCreateUser(User user) {
@@ -50,6 +56,8 @@ public class UserService {
             Role r = this.roleService.fetchById(user.getRole().getId());
             user.setRole(r != null ? r : null);
         }
+
+        this.userProfileService.createUserProfileForUser(user);
 
         return this.userRepository.save(user);
     }
