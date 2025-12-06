@@ -4,7 +4,10 @@ import java.sql.Date;
 import java.time.Instant;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -68,6 +71,11 @@ public class User {
     private boolean verified = false;
 
     private boolean isGoogleAccount = false;
+
+    @ElementCollection
+    @CollectionTable(name = "user_favorite_jobs", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "job_id")
+    private List<Long> favoriteJobIds;
 
     private Instant createdAt;
     private Instant updatedAt;

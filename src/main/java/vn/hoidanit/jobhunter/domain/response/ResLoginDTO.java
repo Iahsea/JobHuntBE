@@ -1,6 +1,7 @@
 package vn.hoidanit.jobhunter.domain.response;
 
 import java.sql.Date;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -37,6 +38,7 @@ public class ResLoginDTO {
         private Date dateOfBirth;
         private GenderEnum gender;
         private boolean isUserGoogleAccount;
+        private List<Long> favoriteJobIds;
     }
 
     @Getter

@@ -100,6 +100,7 @@ public class AuthService {
                                 .dateOfBirth(user.getDateOfBirth())
                                 .gender(user.getGender())
                                 .isUserGoogleAccount(user.isGoogleAccount())
+                                .favoriteJobIds(user.getFavoriteJobIds())
                                 .build())
                 .build();
 

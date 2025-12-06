@@ -24,6 +24,7 @@ import vn.hoidanit.jobhunter.domain.response.ResUpdateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
 import vn.hoidanit.jobhunter.repository.UserRepository;
+import vn.hoidanit.jobhunter.util.SecurityUtil;
 
 @Service
 @Slf4j
@@ -57,9 +58,9 @@ public class UserService {
             user.setRole(r != null ? r : null);
         }
 
-        this.userProfileService.createUserProfileForUser(user);
+        User savedUser = this.userRepository.save(user);
 
-        return this.userRepository.save(user);
+        return savedUser;
     }
 
     public void handleDeleteUser(long id) {
@@ -116,9 +117,7 @@ public class UserService {
             if (reqUser.getName() != null && !reqUser.getName().isBlank()) {
                 currentUser.setName(reqUser.getName());
             }
-            if (reqUser.getAvatar() != null && !reqUser.getAvatar().isBlank()) {
-                currentUser.setAvatar(reqUser.getAvatar());
-            }
+            currentUser.setAvatar(reqUser.getAvatar());
             if (reqUser.getDateOfBirth() != null) {
                 currentUser.setDateOfBirth(reqUser.getDateOfBirth());
             }
@@ -235,6 +234,8 @@ public class UserService {
         if (currentUser != null) {
             currentUser.setVerified(true);
             this.userRepository.save(currentUser);
+            this.userProfileService.createUserProfileForUser(currentUser);
+
         }
     }
 
@@ -242,5 +243,30 @@ public class UserService {
         // TODO Auto-generated method stub
         user.setPassword(hashPassword);
         this.userRepository.save(user);
+    }
+
+    public void handleAddFavoriteJobIds(Long id) {
+        String email = SecurityUtil.getCurrentUserLogin().isPresent()
+                ? SecurityUtil.getCurrentUserLogin().get()
+                : "";
+
+        User currentUserDB = this.handleGetUserByUsername(email);
+        if (currentUserDB != null) {
+            List<Long> favoriteJobIds = currentUserDB.getFavoriteJobIds();
+            if (favoriteJobIds == null) {
+                favoriteJobIds = new java.util.ArrayList<>();
+            }
+            if (!favoriteJobIds.contains(id)) {
+                favoriteJobIds.add(id);
+                currentUserDB.setFavoriteJobIds(favoriteJobIds);
+                log.info("Added job id {} to favorite list", id);
+
+            } else {
+                currentUserDB.getFavoriteJobIds().remove(id);
+                log.info("Removed job id {} from favorite list", id);
+            }
+            this.userRepository.save(currentUserDB);
+
+        }
     }
 }

@@ -3,6 +3,7 @@ package vn.hoidanit.jobhunter.controller;
 import java.util.Arrays;
 import java.util.List;
 
+import org.hibernate.query.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -34,7 +35,9 @@ import vn.hoidanit.jobhunter.domain.response.ResCreateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUpdateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
+import vn.hoidanit.jobhunter.repository.JobRepository;
 import vn.hoidanit.jobhunter.service.FileService;
+import vn.hoidanit.jobhunter.service.JobService;
 import vn.hoidanit.jobhunter.service.UserService;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
@@ -44,6 +47,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/api/v1")
 @Slf4j
 public class UserController {
+
+    private final JobService jobService;
+
     private final UserService userService;
 
     private final PasswordEncoder passwordEncoder;
@@ -53,11 +59,12 @@ public class UserController {
     private final vn.hoidanit.jobhunter.service.MyCvService myCvService;
 
     public UserController(UserService userService, PasswordEncoder passwordEncoder, FileService fileService,
-            vn.hoidanit.jobhunter.service.MyCvService myCvService) {
+            vn.hoidanit.jobhunter.service.MyCvService myCvService, JobService jobService) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.fileService = fileService;
         this.myCvService = myCvService;
+        this.jobService = jobService;
     }
 
     @PostMapping("/users")
@@ -140,6 +147,7 @@ public class UserController {
                 filename = this.fileService.storeFile(avatar, "avatar");
             }
 
+            log.info("FileName: {}", filename);
             updatedUserDTO.setAvatar(filename);
             User updatedUser = userService.handleUpdateUser(id, updatedUserDTO);
 
@@ -183,6 +191,23 @@ public class UserController {
         User user = this.userService.fetchUserById(id);
         List<MyCv> myCvs = this.myCvService.getMyCvsByUser(user);
         return ResponseEntity.ok(myCvs);
+    }
+
+    // post favorite job ids
+    @PatchMapping("/users/favorite-job/{id}")
+    public ResponseEntity<String> postFavoriteJobIds(
+            @PathVariable("id") Long id) throws IdInvalidException {
+
+        this.userService.handleAddFavoriteJobIds(id);
+
+        return ResponseEntity.ok("Cập nhật thành công");
+    }
+
+    @GetMapping("/users/favorite-job")
+    public ResponseEntity<ResultPaginationDTO> getMethodName(Pageable pageable) {
+
+        return ResponseEntity.ok(
+                this.jobService.getAllFavoriteJobUser(pageable));
     }
 
 }
