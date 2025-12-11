@@ -2,6 +2,7 @@ package vn.hoidanit.jobhunter.domain.response.job;
 
 import lombok.Getter;
 import lombok.Setter;
+import vn.hoidanit.jobhunter.domain.Skill;
 import vn.hoidanit.jobhunter.util.constant.JobTypeEnum;
 import vn.hoidanit.jobhunter.util.constant.LevelEnum;
 import vn.hoidanit.jobhunter.util.constant.WorkModeEnum;
@@ -24,4 +25,6 @@ public class JobSummaryResponse {
     private Integer yearsOfExperience;
     private Instant startDate;
     private Instant endDate;
+    private String imageUrl;
+    private List<Skill> skills;
 }
