@@ -92,6 +92,7 @@ public class AuthController {
                     currentUserDB.getEmail(),
                     currentUserDB.getName(),
                     currentUserDB.getRole(),
+                    currentUserDB.getCompany().getId());
                     currentUserDB.getAvatar(),
                     currentUserDB.getPhoneNumber(),
                     currentUserDB.getDateOfBirth(),
@@ -175,13 +176,13 @@ public class AuthController {
                     currentUserDB.getEmail(),
                     currentUserDB.getName(),
                     currentUserDB.getRole(),
+                    currentUserDB.getCompany().getId());
                     currentUserDB.getAvatar(),
                     currentUserDB.getPhoneNumber(),
                     currentUserDB.getDateOfBirth(),
                     currentUserDB.getGender(),
                     currentUserDB.isGoogleAccount(),
                     currentUserDB.getFavoriteJobIds());
-
             res.setUser(userLogin);
         }
 
