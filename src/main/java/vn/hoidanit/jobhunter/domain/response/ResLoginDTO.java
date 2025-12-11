@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.Role;
 
 @Getter
@@ -29,6 +30,10 @@ public class ResLoginDTO {
         private String email;
         private String name;
         private Role role;
+
+        @JsonProperty("company_id")
+        private long companyId;
+
     }
 
     @Getter
