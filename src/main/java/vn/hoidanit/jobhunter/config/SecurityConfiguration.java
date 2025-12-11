@@ -54,7 +54,9 @@ public class SecurityConfiguration {
                 "/swagger-ui/**",
                 "/swagger-ui.html",
                 "/api/v1/outbound/authentication/**",
-                "/api/v1/auth/users/**"
+                "/api/v1/auth/users/**",
+                "/api/v1/users/**",
+                "/api/v1/**"
         };
 
         http
@@ -68,7 +70,7 @@ public class SecurityConfiguration {
                                 .requestMatchers(HttpMethod.GET, "/api/v1/companies/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/jobs/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/skills/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/v1/public/images/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/public/resume/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/v1/files/**").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/v1/resumes/**").permitAll()
