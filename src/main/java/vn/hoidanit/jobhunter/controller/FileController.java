@@ -111,6 +111,7 @@ public class FileController {
                 .body(resource);
     }
 
+    /// lấy company image
     @GetMapping("/public/images/{imageName}")
     @ApiMessage("View an image")
     public ResponseEntity<?> viewImage(@PathVariable(name = "imageName") String imageName) {
@@ -161,4 +162,88 @@ public class FileController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    /// lấy company image
+    @GetMapping("/public/avatar/{imageName}")
+    @ApiMessage("View an image")
+    public ResponseEntity<?> viewAvatar(@PathVariable(name = "imageName") String imageName) {
+        try {
+            java.nio.file.Path imagePath = Paths.get("public/image/avatar/" + imageName);
+            UrlResource resource = new UrlResource(imagePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                // Xác định content type dựa trên extension
+                String contentType = MediaType.IMAGE_JPEG_VALUE;
+                if (imageName.toLowerCase().endsWith(".png")) {
+                    contentType = MediaType.IMAGE_PNG_VALUE;
+                } else if (imageName.toLowerCase().endsWith(".gif")) {
+                    contentType = MediaType.IMAGE_GIF_VALUE;
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .body(resource);
+            } else {
+                // Nếu ảnh không tồn tại, trả về ảnh imagenotfound
+                java.nio.file.Path notFoundPath = Paths.get("public/image/avatar/default.png");
+                UrlResource notFoundResource = new UrlResource(notFoundPath.toUri());
+
+                if (notFoundResource.exists() && notFoundResource.isReadable()) {
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.IMAGE_JPEG)
+                            .body(notFoundResource);
+                } else {
+                    // Nếu cả imagenotfound.jpg cũng không có, trả về 404
+                    return ResponseEntity.notFound().build();
+                }
+            }
+        } catch (Exception e) {
+            // Nếu có lỗi, cố gắng trả về imagenotfound
+            try {
+                java.nio.file.Path notFoundPath = Paths.get("public/image/avatar/default.png");
+                UrlResource notFoundResource = new UrlResource(notFoundPath.toUri());
+
+                if (notFoundResource.exists() && notFoundResource.isReadable()) {
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.IMAGE_JPEG)
+                            .body(notFoundResource);
+                }
+            } catch (Exception ex) {
+                // Ignore
+            }
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/public/resume/{resumeName}")
+    @ApiMessage("View a resume file")
+    public ResponseEntity<?> viewResume(@PathVariable(name = "resumeName") String resumeName) {
+        try {
+            java.nio.file.Path filePath = Paths.get("public/resume/" + resumeName);
+            UrlResource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                // Xác định MIME type
+                String contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+
+                String name = resumeName.toLowerCase();
+                if (name.endsWith(".pdf")) {
+                    contentType = MediaType.APPLICATION_PDF_VALUE;
+                } else if (name.endsWith(".doc")) {
+                    contentType = "application/msword";
+                } else if (name.endsWith(".docx")) {
+                    contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
 }

@@ -1,35 +1,71 @@
 package vn.hoidanit.jobhunter.controller;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.hibernate.query.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 
+
+import com.mysql.cj.x.protobuf.MysqlxCrud.Update;
 import com.turkraft.springfilter.boot.Filter;
 
+import feign.Response;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import vn.hoidanit.jobhunter.domain.MyCv;
 import vn.hoidanit.jobhunter.domain.User;
+import vn.hoidanit.jobhunter.domain.request.ChangePasswordRequest;
 import vn.hoidanit.jobhunter.domain.response.ResCreateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUpdateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
+import vn.hoidanit.jobhunter.repository.JobRepository;
+import vn.hoidanit.jobhunter.service.FileService;
+import vn.hoidanit.jobhunter.service.JobService;
 import vn.hoidanit.jobhunter.service.UserService;
 import vn.hoidanit.jobhunter.specification.UserSpecification;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/v1")
+@Slf4j
 public class UserController {
+
+    private final JobService jobService;
+
     private final UserService userService;
 
     private final PasswordEncoder passwordEncoder;
 
-    public UserController(UserService userService, PasswordEncoder passwordEncoder) {
+    private final FileService fileService;
+
+    private final vn.hoidanit.jobhunter.service.MyCvService myCvService;
+
+    public UserController(UserService userService, PasswordEncoder passwordEncoder, FileService fileService,
+            vn.hoidanit.jobhunter.service.MyCvService myCvService, JobService jobService) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.fileService = fileService;
+        this.myCvService = myCvService;
+        this.jobService = jobService;
     }
 
     @PostMapping("/users")
@@ -94,14 +130,95 @@ public class UserController {
                 this.userService.fetchAllUser(finalSpec, pageable));
     }
 
-    @PutMapping("/users")
+    @PutMapping(value = "/users/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiMessage("Update a user")
-    public ResponseEntity<ResUpdateUserDTO> updateUser(@RequestBody User user) throws IdInvalidException {
-        User ericUser = this.userService.handleUpdateUser(user);
-        if (ericUser == null) {
-            throw new IdInvalidException("User với id = " + user.getId() + " không tồn tại");
+    public ResponseEntity<?> updateUser(
+            @PathVariable("id") Long id,
+            @RequestPart(value = "user", required = false) User updatedUserDTO,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar) throws Exception {
+
+        // lưu file
+        String filename = null;
+        try {
+            if (avatar != null && !avatar.isEmpty()) {
+                if (avatar.getSize() > 10 * 1024 * 1024) { // >10MB
+                    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                            .body("File size exceeds the maximum limit of 10MB");
+                }
+
+                String fileName = avatar.getOriginalFilename();
+                List<String> allowedExtensions = Arrays.asList("pdf", "jpg", "jpeg", "png", "doc", "docx");
+                boolean isValidExtension = allowedExtensions.stream()
+                        .anyMatch(ext -> fileName.toLowerCase().endsWith("." + ext));
+
+                if (!isValidExtension) {
+                    throw new Exception("Invalid file extension. Only allow " + allowedExtensions.toString());
+                }
+
+                filename = this.fileService.storeFile(avatar, "avatar");
+            }
+
+            log.info("FileName: {}", filename);
+            updatedUserDTO.setAvatar(filename);
+            User updatedUser = userService.handleUpdateUser(id, updatedUserDTO);
+
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(this.userService.convertToResUpdateUserDTO(ericUser));
+    }
+
+    @PatchMapping("/users/{id}/change-password")
+    @ApiMessage("Change user password")
+    public ResponseEntity<String> changeUserPassword(
+            @PathVariable("id") Long id,
+            @RequestBody ChangePasswordRequest changePasswordRequest) throws IdInvalidException {
+
+        log.info("Change password request: {}", changePasswordRequest.getCurrentPassword());
+        log.info("Change password request: {}", changePasswordRequest.getNewPassword());
+
+        User currentUser = this.userService.fetchUserById(id);
+        if (currentUser == null) {
+            throw new IdInvalidException("User với id = " + id + " không tồn tại");
+        }
+
+        // kiểm tra mật khẩu cũ
+        boolean isMatch = this.passwordEncoder.matches(changePasswordRequest.getCurrentPassword(),
+                currentUser.getPassword());
+        if (!isMatch) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Current password is incorrect");
+        }
+
+        // cập nhật mật khẩu mới
+        String hashedNewPassword = this.passwordEncoder.encode(changePasswordRequest.getNewPassword());
+        currentUser.setPassword(hashedNewPassword);
+        this.userService.handleUpdateUser(id, currentUser);
+
+        return ResponseEntity.ok("Đổi mật khẩu thành công");
+    }
+
+    @GetMapping("/users/{id}/my-cv")
+    public ResponseEntity<List<MyCv>> getAllMyCv(@PathVariable("id") Long id) {
+        User user = this.userService.fetchUserById(id);
+        List<MyCv> myCvs = this.myCvService.getMyCvsByUser(user);
+        return ResponseEntity.ok(myCvs);
+    }
+
+    // post favorite job ids
+    @PatchMapping("/users/favorite-job/{id}")
+    public ResponseEntity<String> postFavoriteJobIds(
+            @PathVariable("id") Long id) throws IdInvalidException {
+
+        this.userService.handleAddFavoriteJobIds(id);
+
+        return ResponseEntity.ok("Cập nhật thành công");
+    }
+
+    @GetMapping("/users/favorite-job")
+    public ResponseEntity<ResultPaginationDTO> getMethodName(Pageable pageable) {
+
+        return ResponseEntity.ok(
+                this.jobService.getAllFavoriteJobUser(pageable));
     }
 
 }

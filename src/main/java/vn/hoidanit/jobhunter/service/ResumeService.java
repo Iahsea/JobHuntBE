@@ -15,6 +15,7 @@ import com.turkraft.springfilter.converter.FilterSpecificationConverter;
 import com.turkraft.springfilter.parser.FilterParser;
 import com.turkraft.springfilter.parser.node.FilterNode;
 
+import lombok.extern.slf4j.Slf4j;
 import vn.hoidanit.jobhunter.domain.Job;
 import vn.hoidanit.jobhunter.domain.Resume;
 import vn.hoidanit.jobhunter.domain.User;
@@ -28,6 +29,7 @@ import vn.hoidanit.jobhunter.repository.UserRepository;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
 
 @Service
+@Slf4j
 public class ResumeService {
     @Autowired
     FilterBuilder fb;
@@ -106,13 +108,29 @@ public class ResumeService {
         res.setCreatedBy(resume.getCreatedBy());
         res.setUpdatedAt(resume.getUpdatedAt());
         res.setUpdatedBy(resume.getUpdatedBy());
+        res.setIntroduction(resume.getIntroduction());
+        res.setApplyReason(resume.getApplyReason());
+        res.setSocialLinks(resume.getSocialLinks());
 
         if (resume.getJob() != null) {
             res.setCompanyName(resume.getJob().getCompany().getName());
         }
 
-        res.setUser(new ResFetchResumeDTO.UserResume(resume.getUser().getId(), resume.getUser().getName()));
-        res.setJob(new ResFetchResumeDTO.JobResume(resume.getJob().getId(), resume.getJob().getName()));
+        res.setUser(new ResFetchResumeDTO.UserResume(
+                resume.getUser().getId(),
+                resume.getUser().getName(),
+                resume.getUser().getAddress(),
+                resume.getUser().getAge(),
+                resume.getUser().getGender()));
+        res.setJob(new ResFetchResumeDTO.JobResume(
+                resume.getJob().getId(),
+                resume.getJob().getName(),
+                resume.getJob().getLocation(),
+                resume.getJob().getSalary(),
+                resume.getJob().getJobType(),
+                resume.getJob().getCompany().getLogo()
+
+        ));
 
         return res;
     }
@@ -145,6 +163,8 @@ public class ResumeService {
         String email = SecurityUtil.getCurrentUserLogin().isPresent() == true
                 ? SecurityUtil.getCurrentUserLogin().get()
                 : "";
+
+        log.info("Current user email: {}", email);
         FilterNode node = filterParser.parse("email='" + email + "'");
         FilterSpecification<Resume> spec = filterSpecificationConverter.convert(node);
         Page<Resume> pageResume = this.resumeRepository.findAll(spec, pageable);
@@ -162,6 +182,30 @@ public class ResumeService {
 
         // remove sensitive data
         List<ResFetchResumeDTO> listResume = pageResume.getContent()
+                .stream().map(item -> this.getResume(item))
+                .collect(Collectors.toList());
+
+        rs.setResult(listResume);
+
+        return rs;
+    }
+
+    public ResultPaginationDTO fetchAllResumeByUserId(long id, Pageable pageable) {
+        // TODO Auto-generated method stub
+        Page<Resume> pageUser = this.resumeRepository.findByUserId(id, pageable);
+        ResultPaginationDTO rs = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta mt = new ResultPaginationDTO.Meta();
+
+        mt.setPage(pageable.getPageNumber() + 1);
+        mt.setPageSize(pageable.getPageSize());
+
+        mt.setPages(pageUser.getTotalPages());
+        mt.setTotal(pageUser.getTotalElements());
+
+        rs.setMeta(mt);
+
+        // remove sensitive data
+        List<ResFetchResumeDTO> listResume = pageUser.getContent()
                 .stream().map(item -> this.getResume(item))
                 .collect(Collectors.toList());
 

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -17,6 +18,7 @@ import com.turkraft.springfilter.boot.Filter;
 import com.turkraft.springfilter.builder.FilterBuilder;
 import com.turkraft.springfilter.converter.FilterSpecificationConverter;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.Job;
 import vn.hoidanit.jobhunter.domain.Resume;
@@ -35,6 +37,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/api/v1")
+@Slf4j
 public class ResumeController {
 
     private final ResumeService resumeService;
@@ -140,5 +143,15 @@ public class ResumeController {
     public ResponseEntity<ResultPaginationDTO> fetchResumeByUser(Pageable pageable) {
 
         return ResponseEntity.ok().body(this.resumeService.fetchResumeByUser(pageable));
+    }
+
+    @GetMapping("/resumes/users/{id}")
+    @ApiMessage("Get list of resume for user")
+    public ResponseEntity<ResultPaginationDTO> fetchAllResumeByUser(
+            @PathVariable("id") Long id,
+            Pageable pageable) {
+        User user = this.userService.fetchUserById(id);
+        log.info("Fetch resumes for user: {}", user.getEmail());
+        return ResponseEntity.ok().body(this.resumeService.fetchAllResumeByUserId(user.getId(), pageable));
     }
 }

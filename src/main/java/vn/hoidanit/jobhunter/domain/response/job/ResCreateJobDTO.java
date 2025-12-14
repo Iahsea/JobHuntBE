@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import vn.hoidanit.jobhunter.util.constant.LevelEnum;
+import vn.hoidanit.jobhunter.util.constant.WorkModeEnum;
 
 @Getter
 @Setter
@@ -20,6 +21,8 @@ public class ResCreateJobDTO {
     private int quantity;
 
     private LevelEnum level;
+    private Integer yearsOfExperience;
+    private List<WorkModeEnum> workModes;
 
     private Instant startDate;
     private Instant endDate;

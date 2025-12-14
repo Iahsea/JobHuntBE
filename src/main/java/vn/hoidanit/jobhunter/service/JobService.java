@@ -12,12 +12,16 @@ import org.springframework.stereotype.Service;
 import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.Job;
 import vn.hoidanit.jobhunter.domain.Skill;
+import vn.hoidanit.jobhunter.domain.User;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
+import vn.hoidanit.jobhunter.domain.response.job.JobSummaryResponse;
 import vn.hoidanit.jobhunter.domain.response.job.ResCreateJobDTO;
 import vn.hoidanit.jobhunter.domain.response.job.ResUpdateJobDTO;
 import vn.hoidanit.jobhunter.repository.CompanyRepository;
 import vn.hoidanit.jobhunter.repository.JobRepository;
 import vn.hoidanit.jobhunter.repository.SkillRepository;
+import vn.hoidanit.jobhunter.util.SecurityUtil;
+import vn.hoidanit.jobhunter.service.UserService;
 
 @Service
 public class JobService {
@@ -25,13 +29,16 @@ public class JobService {
     private final JobRepository jobRepository;
     private final SkillRepository skillRepository;
     private final CompanyRepository companyRepository;
+    private final UserService userService;
 
     public JobService(JobRepository jobRepository,
             SkillRepository skillRepository,
-            CompanyRepository companyRepository) {
+            CompanyRepository companyRepository,
+            UserService userService) {
         this.jobRepository = jobRepository;
         this.skillRepository = skillRepository;
         this.companyRepository = companyRepository;
+        this.userService = userService;
     }
 
     public Optional<Job> fetchJobById(long id) {
@@ -68,6 +75,8 @@ public class JobService {
         dto.setQuantity(currentJob.getQuantity());
         dto.setLocation(currentJob.getLocation());
         dto.setLevel(currentJob.getLevel());
+        dto.setWorkModes(currentJob.getWorkModes());
+        dto.setYearsOfExperience(currentJob.getYearsOfExperience());
         dto.setStartDate(currentJob.getStartDate());
         dto.setEndDate(currentJob.getEndDate());
         dto.setActive(currentJob.isActive());
@@ -109,10 +118,14 @@ public class JobService {
         jobInDB.setSalary(j.getSalary());
         jobInDB.setQuantity(j.getQuantity());
         jobInDB.setLocation(j.getLocation());
+        jobInDB.setDescription(j.getDescription());
+        jobInDB.setYearsOfExperience(j.getYearsOfExperience());
         jobInDB.setLevel(j.getLevel());
+        jobInDB.setJobType(j.getJobType());
         jobInDB.setStartDate(j.getStartDate());
         jobInDB.setEndDate(j.getEndDate());
         jobInDB.setActive(j.isActive());
+        jobInDB.setWorkModes(j.getWorkModes());
 
         // update job
         Job currentJob = this.jobRepository.save(jobInDB);
@@ -130,12 +143,13 @@ public class JobService {
         dto.setActive(currentJob.isActive());
         dto.setUpdatedAt(currentJob.getUpdatedAt());
         dto.setUpdatedBy(currentJob.getUpdatedBy());
+        dto.setDescription(currentJob.getDescription());
+        dto.setJobType(currentJob.getJobType());
+        dto.setWorkModes(currentJob.getWorkModes());
+        dto.setYearsOfExperience(currentJob.getYearsOfExperience());
 
         if (currentJob.getSkills() != null) {
-            List<String> skills = currentJob.getSkills()
-                    .stream().map(item -> item.getName())
-                    .collect(Collectors.toList());
-            dto.setSkills(skills);
+            dto.setSkills(currentJob.getSkills());
         }
 
         return dto;
@@ -163,4 +177,47 @@ public class JobService {
 
         return rs;
     }
+
+    public ResultPaginationDTO getAllFavoriteJobUser(Pageable pageable) {
+        String email = SecurityUtil.getCurrentUserLogin().isPresent()
+                ? SecurityUtil.getCurrentUserLogin().get()
+                : "";
+
+        User currentUserDB = this.userService.handleGetUserByUsername(email);
+        List<Long> favoriteJobs = currentUserDB.getFavoriteJobIds();
+
+        Page<Job> pageJob = this.jobRepository.findByIdIn(favoriteJobs, pageable);
+        List<JobSummaryResponse> jobSummaryResponses = pageJob.getContent().stream().map(job -> {
+            JobSummaryResponse jsr = new JobSummaryResponse();
+            jsr.setId(job.getId());
+            jsr.setName(job.getName());
+            jsr.setLocation(job.getLocation());
+            jsr.setSalary(job.getSalary());
+            jsr.setJobType(job.getJobType());
+            jsr.setLevel(job.getLevel());
+            jsr.setQuantity(job.getQuantity());
+            jsr.setYearsOfExperience(job.getYearsOfExperience());
+            jsr.setStartDate(job.getStartDate());
+            jsr.setEndDate(job.getEndDate());
+            jsr.setActive(job.isActive());
+            jsr.setWorkModes(job.getWorkModes());
+            jsr.setImageUrl(
+                    job.getCompany() != null ? job.getCompany().getLogo() : null);
+            return jsr;
+        }).collect(Collectors.toList());
+        ResultPaginationDTO rs = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta mt = new ResultPaginationDTO.Meta();
+
+        mt.setPage(pageable.getPageNumber() + 1);
+        mt.setPageSize(pageable.getPageSize());
+
+        mt.setPages(pageJob.getTotalPages());
+        mt.setTotal(pageJob.getTotalElements());
+
+        rs.setMeta(mt);
+
+        rs.setResult(jobSummaryResponses);
+        return rs;
+    }
+
 }

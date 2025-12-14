@@ -9,10 +9,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -65,5 +67,26 @@ public class FileService {
         Path path = Paths.get(baseURI + folder + "/" + fileName);
         File file = new File(path.toString());
         return new InputStreamResource(new FileInputStream(file));
+    }
+
+    public String storeFile(MultipartFile file, String folder) throws IOException {
+        if (file.getOriginalFilename() == null) {
+            throw new IOException("Invalid image format");
+        }
+        String filename = StringUtils.cleanPath(file.getOriginalFilename());
+        // Thêm UUID vào trước tên file để đảm bảo tên file là duy nhất
+        String uniqueFilename = UUID.randomUUID().toString() + "_" + filename;
+
+        // Đường dẫn đến thư mục mà bạn muốn lưu file
+        java.nio.file.Path uploadDir = Paths.get("public/image", folder);
+        // Kiểm tra và tạo thư mục nếu nó không tồn tại
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+        // Đường dẫn đầy đủ đến file
+        java.nio.file.Path destination = Paths.get(uploadDir.toString(), uniqueFilename);
+        // Sao chép file vào thư mục đích
+        Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
+        return uniqueFilename;
     }
 }

@@ -52,19 +52,29 @@ public class SecurityConfiguration {
                 "/api/v1/email/**",
                 "/v3/api-docs/**",
                 "/swagger-ui/**",
-                "/swagger-ui.html"
+                "/swagger-ui.html",
+                "/api/v1/outbound/authentication/**",
+                "/api/v1/auth/users/**",
+                "/api/v1/users/**",
+                "/api/v1/**"
         };
 
         http
                 .csrf(c -> c.disable())
                 .cors(Customizer.withDefaults())
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+
                 .authorizeHttpRequests(
                         authz -> authz
                                 .requestMatchers(whiteList).permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/companies/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/jobs/**").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/v1/skills/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/v1/public/images/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/public/resume/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/files/**").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/resumes/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/resumes/**").permitAll()
 
                                 .anyRequest().authenticated())
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults())
