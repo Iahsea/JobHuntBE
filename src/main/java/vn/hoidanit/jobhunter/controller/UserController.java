@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
+
 
 import com.mysql.cj.x.protobuf.MysqlxCrud.Update;
 import com.turkraft.springfilter.boot.Filter;
@@ -39,6 +39,7 @@ import vn.hoidanit.jobhunter.repository.JobRepository;
 import vn.hoidanit.jobhunter.service.FileService;
 import vn.hoidanit.jobhunter.service.JobService;
 import vn.hoidanit.jobhunter.service.UserService;
+import vn.hoidanit.jobhunter.specification.UserSpecification;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -113,10 +114,20 @@ public class UserController {
     @ApiMessage("fetch all users")
     public ResponseEntity<ResultPaginationDTO> getAllUser(
             @Filter Specification<User> spec,
+            @RequestParam(required = false) Long roleId,
             Pageable pageable) {
 
+        // nếu spec từ @Filter null thì tạo where(null)
+        Specification<User> finalSpec = (spec == null)
+                ? Specification.where(null)
+                : spec;
+
+        // ghép thêm điều kiện theo roleId (nếu có truyền)
+        finalSpec = finalSpec.and(UserSpecification.hasRoleId(roleId));
+
+
         return ResponseEntity.status(HttpStatus.OK).body(
-                this.userService.fetchAllUser(spec, pageable));
+                this.userService.fetchAllUser(finalSpec, pageable));
     }
 
     @PutMapping(value = "/users/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
