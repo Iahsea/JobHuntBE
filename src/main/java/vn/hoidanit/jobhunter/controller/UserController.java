@@ -5,14 +5,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.turkraft.springfilter.boot.Filter;
 
@@ -23,6 +16,7 @@ import vn.hoidanit.jobhunter.domain.response.ResUpdateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
 import vn.hoidanit.jobhunter.service.UserService;
+import vn.hoidanit.jobhunter.specification.UserSpecification;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
 
@@ -84,10 +78,20 @@ public class UserController {
     @ApiMessage("fetch all users")
     public ResponseEntity<ResultPaginationDTO> getAllUser(
             @Filter Specification<User> spec,
+            @RequestParam(required = false) Long roleId,
             Pageable pageable) {
 
+        // nếu spec từ @Filter null thì tạo where(null)
+        Specification<User> finalSpec = (spec == null)
+                ? Specification.where(null)
+                : spec;
+
+        // ghép thêm điều kiện theo roleId (nếu có truyền)
+        finalSpec = finalSpec.and(UserSpecification.hasRoleId(roleId));
+
+
         return ResponseEntity.status(HttpStatus.OK).body(
-                this.userService.fetchAllUser(spec, pageable));
+                this.userService.fetchAllUser(finalSpec, pageable));
     }
 
     @PutMapping("/users")
