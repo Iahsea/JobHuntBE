@@ -56,6 +56,7 @@ public class OtpService {
         }
         // optionally delete after use
         this.otpTokenRepository.delete(otp);
+
         return true;
     }
 

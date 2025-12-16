@@ -3,6 +3,7 @@ package vn.hoidanit.jobhunter.service;
 import org.springframework.stereotype.Service;
 
 import jakarta.validation.Valid;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import vn.hoidanit.jobhunter.domain.User;
 import vn.hoidanit.jobhunter.domain.UserProfile;
@@ -65,6 +66,16 @@ public class UserProfileService {
 
     public UserProfile getUserProfileById(Long id) {
         return this.userProfileRepository.findByUserId(id);
+    }
+
+    @Transactional
+    public void handleDeleteUserProfile(long id) {
+        userProfileRepository.deleteByUserId(id);
+    }
+
+
+    public UserProfile getUserProfileByUserId(Long user_id){
+        return  this.userProfileRepository.findByUserId(user_id);
     }
 
 }
