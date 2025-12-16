@@ -22,14 +22,16 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 
 
-import com.mysql.cj.x.protobuf.MysqlxCrud.Update;
+//import com.mysql.cj.x.protobuf.MysqlxCrud.Update;
 import com.turkraft.springfilter.boot.Filter;
 
 import feign.Response;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
 import vn.hoidanit.jobhunter.domain.MyCv;
 import vn.hoidanit.jobhunter.domain.User;
+import vn.hoidanit.jobhunter.domain.request.AdminUpdateUserRequest;
 import vn.hoidanit.jobhunter.domain.request.ChangePasswordRequest;
 import vn.hoidanit.jobhunter.domain.response.ResCreateUserDTO;
 import vn.hoidanit.jobhunter.domain.response.ResUpdateUserDTO;
@@ -220,5 +222,16 @@ public class UserController {
         return ResponseEntity.ok(
                 this.jobService.getAllFavoriteJobUser(pageable));
     }
+
+
+    @PutMapping("/admin/users/{id}")
+    public ResponseEntity<?> updateUserByAdmin(
+            @PathVariable Long id,
+            @RequestBody AdminUpdateUserRequest req
+    ) {
+        User updated = userService.handleUpdateUserByAdmin(id, req);
+        return ResponseEntity.ok(updated); // tốt hơn: trả UserResponseDTO
+    }
+
 
 }

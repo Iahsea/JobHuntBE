@@ -15,6 +15,7 @@ import vn.hoidanit.jobhunter.repository.UserRepository;
 import vn.hoidanit.jobhunter.repository.httpclient.OutboundIdentityClient;
 import vn.hoidanit.jobhunter.repository.httpclient.OutboundUserClient;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
+import vn.hoidanit.jobhunter.util.constant.StatusEnum;
 
 @Service
 @Slf4j
@@ -23,14 +24,16 @@ public class AuthService {
     private final OutboundIdentityClient outboundIdentityClient;
     private final OutboundUserClient outboundUserClient;
     private final UserRepository userRepository;
+    private final UserService userService;
     private final SecurityUtil securityUtil;
     private final UserProfileService userProfileService;
 
     public AuthService(OutboundIdentityClient outboundIdentityClient, OutboundUserClient outboundUserClient,
-            UserRepository userRepository, SecurityUtil securityUtil, UserProfileService userProfileService) {
+                       UserRepository userRepository, UserService userService, SecurityUtil securityUtil, UserProfileService userProfileService) {
         this.outboundIdentityClient = outboundIdentityClient;
         this.outboundUserClient = outboundUserClient;
         this.userRepository = userRepository;
+        this.userService = userService;
         this.securityUtil = securityUtil;
         this.userProfileService = userProfileService;
     }
@@ -79,14 +82,19 @@ public class AuthService {
                             .email(userInfo.getEmail())
                             .avatar(userInfo.getPicture())
                             .isGoogleAccount(true)
+                            .status(StatusEnum.ACTIVE)
+                            .verified(true)
                             .password("") // có thể bỏ
                             .build());
 
             userProfileService.createUserProfileForUser(user);
+
         } else {
             // User đã tồn tại → dùng lại
             user = existingUser;
         }
+
+        userService.applyDefaultRegisterStateWithGoogle(user);
 
         // Build response
         ResLoginDTO res = ResLoginDTO.builder()

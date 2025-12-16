@@ -38,6 +38,8 @@ import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
 import vn.hoidanit.jobhunter.service.AuthService;
 
+import static vn.hoidanit.jobhunter.util.constant.StatusEnum.PENDING;
+
 @RestController
 @RequestMapping("/api/v1")
 @Slf4j
@@ -73,49 +75,59 @@ public class AuthController {
 
     @PostMapping("/auth/login")
     public ResponseEntity<ResLoginDTO> login(@Valid @RequestBody ReqLoginDTO loginDto) {
-        // Nạp input gồm username/password vào Security
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                loginDto.getUsername(), loginDto.getPassword());
 
-        // xác thực người dùng => cần viết hàm loadUserByUsername
-        Authentication authentication = authenticationManagerBuilder.getObject()
+        //  Authenticate
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(
+                        loginDto.getUsername(), loginDto.getPassword());
+
+        Authentication authentication = authenticationManagerBuilder
+                .getObject()
                 .authenticate(authenticationToken);
 
-        // set thông tin người dùng đăng nhập vào context (có thể sử dụng sau này)
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        ResLoginDTO res = new ResLoginDTO();
-        User currentUserDB = this.userService.handleGetUserByUsername(loginDto.getUsername());
-        if (currentUserDB != null) {
-            ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
-                    currentUserDB.getId(),
-                    currentUserDB.getEmail(),
-                    currentUserDB.getName(),
-                    currentUserDB.getRole(),
-                    currentUserDB.getCompany().getId());
-                    currentUserDB.getAvatar(),
-                    currentUserDB.getPhoneNumber(),
-                    currentUserDB.getDateOfBirth(),
-                    currentUserDB.getGender(),
-                    currentUserDB.isGoogleAccount(),
-                    currentUserDB.getFavoriteJobIds());
+        //  Lấy user từ DB
+        User currentUserDB = userService.handleGetUserByUsername(loginDto.getUsername());
 
-            res.setUser(userLogin);
+        //  Build UserLogin (NULL-SAFE company)
+        ResLoginDTO.UserLogin userLogin = null;
+        if (currentUserDB != null) {
+            Long companyId = currentUserDB.getCompany() != null
+                    ? currentUserDB.getCompany().getId()
+                    : null;
+
+            userLogin = ResLoginDTO.UserLogin.builder()
+                    .id(currentUserDB.getId())
+                    .email(currentUserDB.getEmail())
+                    .name(currentUserDB.getName())
+                    .role(currentUserDB.getRole())
+                    .companyId(companyId) //  null-safe
+                    .avatar(currentUserDB.getAvatar())
+                    .phoneNumber(currentUserDB.getPhoneNumber())
+                    .dateOfBirth(currentUserDB.getDateOfBirth())
+                    .gender(currentUserDB.getGender())
+                    .isUserGoogleAccount(currentUserDB.isGoogleAccount())
+                    .favoriteJobIds(currentUserDB.getFavoriteJobIds())
+                    .build();
         }
 
-        // create access token
-        String access_token = this.securityUtil.createAccessToken(authentication.getName(), res);
-        res.setAccessToken(access_token);
+        // 4) Build response
+        ResLoginDTO res = ResLoginDTO.builder()
+                .user(userLogin)
+                .build();
 
-        // create refresh token
-        String refresh_token = this.securityUtil.createRefreshToken(loginDto.getUsername(), res);
+        //  Create access token
+        String accessToken = securityUtil.createAccessToken(authentication.getName(), res);
+        res.setAccessToken(accessToken);
 
-        // update user
-        this.userService.updateUserToken(refresh_token, loginDto.getUsername());
+        //  Create refresh token
+        String refreshToken = securityUtil.createRefreshToken(loginDto.getUsername(), res);
+        userService.updateUserToken(refreshToken, loginDto.getUsername());
 
-        // set cookies
+        //  Set cookie
         ResponseCookie resCookies = ResponseCookie
-                .from("refresh_token", refresh_token)
+                .from("refresh_token", refreshToken)
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
@@ -126,6 +138,7 @@ public class AuthController {
                 .header(HttpHeaders.SET_COOKIE, resCookies.toString())
                 .body(res);
     }
+
 
     @GetMapping("/auth/account")
     @ApiMessage("fetch account")
@@ -176,7 +189,7 @@ public class AuthController {
                     currentUserDB.getEmail(),
                     currentUserDB.getName(),
                     currentUserDB.getRole(),
-                    currentUserDB.getCompany().getId());
+                    currentUserDB.getCompany().getId(),
                     currentUserDB.getAvatar(),
                     currentUserDB.getPhoneNumber(),
                     currentUserDB.getDateOfBirth(),
@@ -250,12 +263,13 @@ public class AuthController {
         // ensure user is created as not verified
         User ericUser = new User();
         if (existingUser == null) {
-            postManUser.setVerified(false);
-            ericUser = this.userService.handleCreateUser(postManUser);
+            userService.applyDefaultRegisterState(postManUser);
+            ericUser = userService.handleCreateUser(postManUser);
         } else {
             existingUser.setName(postManUser.getName());
-            existingUser.setPassword(postManUser.getPassword());
-            ericUser = this.userService.handleUpdateUser(existingUser.getId(), existingUser);
+            existingUser.setPassword(hashPassword);
+            userService.applyDefaultRegisterState(existingUser);
+            ericUser = userService.handleUpdateUser(existingUser.getId(), existingUser);
         }
 
         // create OTP and send to user for verification (valid 5 minutes)

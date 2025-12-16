@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.hoidanit.jobhunter.util.constant.GenderEnum;
+import vn.hoidanit.jobhunter.util.constant.StatusEnum;
 
 @Getter
 @Setter
@@ -25,6 +26,7 @@ public class ResUserDTO {
     private Instant createdAt;
     private String avatar;
     private String phoneNumber;
+    private StatusEnum status;
     private String description;
     private String dateOfBirth;
 
