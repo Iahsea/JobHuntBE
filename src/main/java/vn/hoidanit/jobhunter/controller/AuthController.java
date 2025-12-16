@@ -87,8 +87,21 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        //  Lấy user từ DB
-        User currentUserDB = userService.handleGetUserByUsername(loginDto.getUsername());
+        ResLoginDTO res = new ResLoginDTO();
+        User currentUserDB = this.userService.handleGetUserByUsername(loginDto.getUsername());
+        if (currentUserDB != null) {
+            ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
+                    currentUserDB.getId(),
+                    currentUserDB.getEmail(),
+                    currentUserDB.getName(),
+                    currentUserDB.getRole(),
+                    currentUserDB.getCompany().getId(),
+                    currentUserDB.getAvatar(),
+                    currentUserDB.getPhoneNumber(),
+                    currentUserDB.getDateOfBirth(),
+                    currentUserDB.getGender(),
+                    currentUserDB.isGoogleAccount(),
+                    currentUserDB.getFavoriteJobIds());
 
         //  Build UserLogin (NULL-SAFE company)
         ResLoginDTO.UserLogin userLogin = null;
