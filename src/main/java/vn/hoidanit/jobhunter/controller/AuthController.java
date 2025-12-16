@@ -92,7 +92,7 @@ public class AuthController {
                     currentUserDB.getEmail(),
                     currentUserDB.getName(),
                     currentUserDB.getRole(),
-                    currentUserDB.getCompany().getId());
+                    currentUserDB.getCompany().getId(),
                     currentUserDB.getAvatar(),
                     currentUserDB.getPhoneNumber(),
                     currentUserDB.getDateOfBirth(),
@@ -176,7 +176,7 @@ public class AuthController {
                     currentUserDB.getEmail(),
                     currentUserDB.getName(),
                     currentUserDB.getRole(),
-                    currentUserDB.getCompany().getId());
+                    currentUserDB.getCompany().getId(),
                     currentUserDB.getAvatar(),
                     currentUserDB.getPhoneNumber(),
                     currentUserDB.getDateOfBirth(),

@@ -66,6 +66,12 @@ public class ResumeController {
             throw new IdInvalidException("User id/Job id không tồn tại");
         }
 
+        boolean exists = resumeService.checkResumeExists(resume);
+        if (exists) {
+            throw new IdInvalidException("Bạn đã apply resume vào vị trí job này");
+        }
+
+
         // create new resume
         return ResponseEntity.status(HttpStatus.CREATED).body(this.resumeService.create(resume));
     }
