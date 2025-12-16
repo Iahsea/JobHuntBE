@@ -35,7 +35,7 @@ public class ResLoginDTO {
         private String name;
         private Role role;
         @JsonProperty("company_id")
-        private long companyId;
+        private Long companyId;
         private String avatar;
         private String phoneNumber;
         private Date dateOfBirth;
