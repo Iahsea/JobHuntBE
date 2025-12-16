@@ -87,21 +87,8 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        ResLoginDTO res = new ResLoginDTO();
-        User currentUserDB = this.userService.handleGetUserByUsername(loginDto.getUsername());
-        if (currentUserDB != null) {
-            ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
-                    currentUserDB.getId(),
-                    currentUserDB.getEmail(),
-                    currentUserDB.getName(),
-                    currentUserDB.getRole(),
-                    currentUserDB.getCompany().getId(),
-                    currentUserDB.getAvatar(),
-                    currentUserDB.getPhoneNumber(),
-                    currentUserDB.getDateOfBirth(),
-                    currentUserDB.getGender(),
-                    currentUserDB.isGoogleAccount(),
-                    currentUserDB.getFavoriteJobIds());
+        //  Lấy user từ DB
+        User currentUserDB = userService.handleGetUserByUsername(loginDto.getUsername());
 
         //  Build UserLogin (NULL-SAFE company)
         ResLoginDTO.UserLogin userLogin = null;
@@ -115,7 +102,7 @@ public class AuthController {
                     .email(currentUserDB.getEmail())
                     .name(currentUserDB.getName())
                     .role(currentUserDB.getRole())
-                    .companyId(companyId) //  null-safe
+                    .companyId(currentUserDB.getCompany().getId()) //  null-safe
                     .avatar(currentUserDB.getAvatar())
                     .phoneNumber(currentUserDB.getPhoneNumber())
                     .dateOfBirth(currentUserDB.getDateOfBirth())
