@@ -1,0 +1,30 @@
+package vn.hoidanit.jobhunter.domain;
+
+import java.time.Instant;
+
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+@Setter
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "chat_message")
+@Entity
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class ChatMessage {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
+
+    String conversationId;
+
+    String message;
+
+    @Embedded
+    ParticipantInfo sender;
+
+    Instant createdDate;
+}

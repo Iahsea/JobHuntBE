@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -29,6 +30,7 @@ import vn.hoidanit.jobhunter.util.error.StorageException;
 
 @RestController
 @RequestMapping("/api/v1")
+@Slf4j
 public class FileController {
 
     @Value("${hoidanit.upload-file.base-uri}")
@@ -220,15 +222,16 @@ public class FileController {
     public ResponseEntity<?> viewResume(@PathVariable(name = "resumeName") String resumeName) {
         try {
             java.nio.file.Path filePath = Paths.get("public/resume/" + resumeName);
+            log.info("Loading resume from path: {}", filePath);
             UrlResource resource = new UrlResource(filePath.toUri());
-
+            log.info("Resource exists: {}", resource);
             if (resource.exists() && resource.isReadable()) {
                 // Xác định MIME type
                 String contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
                 String name = resumeName.toLowerCase();
                 if (name.endsWith(".pdf")) {
-                    contentType = MediaType.APPLICATION_PDF_VALUE;
+                    contentType = MediaType.APPLICATION_PDF_VALUE; //D:\dev\javabe\restfulAPI\source\java-spring-jobhunter-final-project\java-spring-jobhunter-final-project\public\resume
                 } else if (name.endsWith(".doc")) {
                     contentType = "application/msword";
                 } else if (name.endsWith(".docx")) {

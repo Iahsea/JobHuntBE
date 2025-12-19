@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.mysql.cj.x.protobuf.MysqlxCrud.Update;
 import com.turkraft.springfilter.boot.Filter;
 
 import feign.Response;
