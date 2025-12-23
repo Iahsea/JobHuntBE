@@ -34,9 +34,10 @@ public class ConversationService {
     public List<ConversationResponse> myConversations() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         var userInfo = userService.handleGetUserByUsername(email);
+        String userId = String.valueOf(userInfo.getId());
         List<Conversation> conversations = conversationRepository.findAllByParticipantIdsContains(userInfo.getId());
 
-        return conversations.stream().map(this::toConversationResponse).toList();
+        return conversations.stream().map(conversation -> this.toConversationResponse(conversation, userId)).toList();
     }
 
     public ConversationResponse create(ConversationRequest request) throws IdInvalidException {
@@ -47,7 +48,7 @@ public class ConversationService {
         var participantInfo =
                 userService.fetchUserById(Long.parseLong(request.getParticipantIds().getFirst()));
 
-        if (Objects.isNull(userInfo) || Objects.isNull(participantInfo)) {
+        if (Objects.isNull(participantInfo)) {
             throw new IdInvalidException("User or Participant ID is invalid");
         }
 
@@ -69,10 +70,10 @@ public class ConversationService {
                                     .avatar(userInfo.getAvatar())
                                     .build(),
                             ParticipantInfo.builder()
-                                    .userId(userId)
-                                    .username(participantInfo.getEmail())
+                                    .userId(request.getParticipantIds().getFirst())
+                                    .username(participantInfo.getCompany().getName())
                                     .name(participantInfo.getName())
-                                    .avatar(participantInfo.getAvatar())
+                                    .avatar(participantInfo.getCompany().getLogo())
                                     .build());
 
                     // Build conversation info
@@ -87,7 +88,7 @@ public class ConversationService {
                     return conversationRepository.save(newConversation);
                 });
 
-        return toConversationResponse(conversation);
+        return toConversationResponse(conversation, userId);
     }
 
     private String generateParticipantHash(List<Long> ids) {
@@ -101,20 +102,57 @@ public class ConversationService {
         return stringJoiner.toString();
     }
 
-    private ConversationResponse toConversationResponse(Conversation conversation) {
-        String currentUserId =
-                SecurityContextHolder.getContext().getAuthentication().getName();
+//    private ConversationResponse toConversationResponse(Conversation conversation, String userId) {
+//        ConversationResponse conversationResponse = conversationMapper.toConversationResponse(conversation);
+//
+//        log.info("conversationResponse: {}", conversationResponse);
+//
+//        conversation.getParticipants().stream()
+//                .filter(participantInfo -> !participantInfo.getUserId().equals(userId))
+//                .findFirst()
+//                .ifPresent(participantInfo -> {
+//                    log.info("participantInfo123: {}", participantInfo);
+//                    conversationResponse.setConversationName(participantInfo.getUsername());
+//                    conversationResponse.setConversationAvatar(participantInfo.getAvatar());
+//                });
+//
+//        return conversationResponse;
+//    }
 
-        ConversationResponse conversationResponse = conversationMapper.toConversationResponse(conversation);
+    private ConversationResponse toConversationResponse(Conversation conversation, String userId) {
+        ConversationResponse response = conversationMapper.toConversationResponse(conversation);
 
-        conversation.getParticipants().stream()
-                .filter(participantInfo -> !participantInfo.getUserId().equals(currentUserId))
-                .findFirst()
-                .ifPresent(participantInfo -> {
-                    conversationResponse.setConversationName(participantInfo.getUsername());
-                    conversationResponse.setConversationAvatar(participantInfo.getAvatar());
-                });
+        log.info("Conversation id: {}", conversation.getId());
+        log.info("Current userId: {}", userId);
+        log.info("Total participants: {}", conversation.getParticipants().size());
 
-        return conversationResponse;
+        ParticipantInfo otherParticipant = null;
+
+        for (ParticipantInfo participant : conversation.getParticipants()) {
+            log.info("Checking participant: userId={}, username={}",
+                    participant.getUserId(),
+                    participant.getUsername());
+
+            // bỏ qua chính mình
+            if (participant.getUserId().equals(userId)) {
+                log.info("→ Skip current user");
+                continue;
+            }
+
+            // participant còn lại
+            otherParticipant = participant;
+            log.info("→ Found other participant: {}", participant.getUsername());
+            break; // chat 1-1 nên break luôn
+        }
+
+        if (otherParticipant != null) {
+            response.setConversationName(otherParticipant.getUsername());
+            response.setConversationAvatar(otherParticipant.getAvatar());
+        } else {
+            log.warn("⚠ Không tìm thấy participant còn lại cho conversation {}", conversation.getId());
+        }
+
+        return response;
     }
+
 }

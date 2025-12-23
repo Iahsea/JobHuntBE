@@ -10,6 +10,7 @@ import java.util.UUID;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.springframework.beans.factory.annotation.Value;
@@ -137,7 +138,9 @@ public class AuthService {
 
 
     public IntrospectResponse introspect(String token, boolean isRefresh) throws JOSEException, ParseException, IdInvalidException {
-        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+        // Decode the Base64-encoded secret key
+        byte[] keyBytes = Base64.from(SIGNER_KEY).decode();
+        JWSVerifier verifier = new MACVerifier(keyBytes);
 
         SignedJWT signedJWT = SignedJWT.parse(token);
 
@@ -152,11 +155,18 @@ public class AuthService {
 
         var verified = signedJWT.verify(verifier);
 
+        log.info("TOKEN VERIFIED: {}", verified);
+        log.info("Expiry time check: {}", expiryTime.after(new Date()));
+
         if (!(verified && expiryTime.after(new Date()))) throw new IdInvalidException("Token is invalid");
+
+        //get id
+        String email = signedJWT.getJWTClaimsSet().getSubject();
+        User user = userRepository.findByEmail(email);
 
         return IntrospectResponse.builder()
                 .valid(true)
-                .userId(signedJWT.getJWTClaimsSet().getSubject())
+                .userId(String.valueOf(user.getId()))
                 .build();
     }
 }

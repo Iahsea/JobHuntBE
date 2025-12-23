@@ -97,6 +97,7 @@ public class AuthController {
                     currentUserDB.getDateOfBirth(),
                     currentUserDB.getGender(),
                     currentUserDB.isGoogleAccount(),
+                    currentUserDB.getCompany().getId(),
                     currentUserDB.getFavoriteJobIds());
 
             res.setUser(userLogin);
@@ -180,6 +181,7 @@ public class AuthController {
                     currentUserDB.getDateOfBirth(),
                     currentUserDB.getGender(),
                     currentUserDB.isGoogleAccount(),
+                    currentUserDB.getCompany().getId(),
                     currentUserDB.getFavoriteJobIds());
 
             res.setUser(userLogin);

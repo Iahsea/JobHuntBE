@@ -1,5 +1,6 @@
 package vn.hoidanit.jobhunter.service;
 
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import vn.hoidanit.jobhunter.domain.WebSocketSession;
 
@@ -16,10 +17,12 @@ import vn.hoidanit.jobhunter.repository.WebSocketSessionRepository;
 public class WebSocketSessionService {
     WebSocketSessionRepository webSocketSessionRepository;
 
+    @Transactional
     public void create(WebSocketSession webSocketSession) {
         webSocketSessionRepository.save(webSocketSession);
     }
 
+    @Transactional
     public void deleteBySocketSessionId(String socketSessionId) {
         webSocketSessionRepository.deleteBySocketSessionId(socketSessionId);
     }

@@ -38,6 +38,8 @@ public class SocketHandler {
         // Get Token from request param
         String token = client.getHandshakeData().getSingleUrlParam("token");
 
+        log.info("TOKEN: {}", token);
+
         // Verify token
         IntrospectResponse introspect = authService.introspect(token, false);
         // If Token is invalid disconnect
