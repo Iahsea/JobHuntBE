@@ -27,4 +27,21 @@ public class ChatMessage {
     ParticipantInfo sender;
 
     Instant createdDate;
+
+    // Message type: TEXT, IMAGE, FILE
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    MessageType messageType = MessageType.TEXT;
+
+    // For IMAGE and FILE messages
+    String fileUrl;
+    String fileName;
+    Long fileSize; // in bytes
+
+    public enum MessageType {
+        TEXT,
+        IMAGE,
+        FILE
+    }
+
 }

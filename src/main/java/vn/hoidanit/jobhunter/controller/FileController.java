@@ -79,6 +79,54 @@ public class FileController {
         return ResponseEntity.ok().body(res);
     }
 
+    @PostMapping("/files/chat")
+    @ApiMessage("Upload chat file or image")
+    public ResponseEntity<ResUploadFileDTO> uploadChatFile(
+            @RequestParam(name = "file", required = false) MultipartFile file,
+            @RequestParam(name = "type", required = false, defaultValue = "file") String type
+    ) throws IOException, StorageException {
+        // Validate file exists
+        if (file == null || file.isEmpty()) {
+            throw new StorageException("File is empty. Please upload a file.");
+        }
+
+        String fileName = file.getOriginalFilename();
+        String mappedFolder;
+
+        // Determine folder and validate based on type
+        if ("image".equalsIgnoreCase(type)) {
+            // For images
+            List<String> allowedImageExtensions = Arrays.asList("jpg", "jpeg", "png", "gif", "webp");
+            boolean isValidImage = allowedImageExtensions.stream()
+                    .anyMatch(ext -> fileName.toLowerCase().endsWith(ext));
+
+            if (!isValidImage) {
+                throw new StorageException("Invalid image extension. Only allows " + allowedImageExtensions.toString());
+            }
+            mappedFolder = "chat/images";
+        } else {
+            // For files (documents, etc.)
+            List<String> allowedFileExtensions = Arrays.asList("pdf", "doc", "docx", "xls", "xlsx", "txt", "zip", "rar");
+            boolean isValidFile = allowedFileExtensions.stream()
+                    .anyMatch(ext -> fileName.toLowerCase().endsWith(ext));
+
+            if (!isValidFile) {
+                throw new StorageException("Invalid file extension. Only allows " + allowedFileExtensions.toString());
+            }
+            mappedFolder = "chat/files";
+        }
+
+        // Create directory if not exist
+        this.fileService.createDirectory(baseURI + mappedFolder);
+
+        // Store file
+        String uploadedFile = this.fileService.store(file, mappedFolder);
+
+        ResUploadFileDTO res = new ResUploadFileDTO(uploadedFile, Instant.now());
+
+        return ResponseEntity.ok().body(res);
+    }
+
     @GetMapping("/files")
     @ApiMessage("Download a file")
     public ResponseEntity<Resource> download(
@@ -231,7 +279,7 @@ public class FileController {
 
                 String name = resumeName.toLowerCase();
                 if (name.endsWith(".pdf")) {
-                    contentType = MediaType.APPLICATION_PDF_VALUE; //D:\dev\javabe\restfulAPI\source\java-spring-jobhunter-final-project\java-spring-jobhunter-final-project\public\resume
+                    contentType = MediaType.APPLICATION_PDF_VALUE;
                 } else if (name.endsWith(".doc")) {
                     contentType = "application/msword";
                 } else if (name.endsWith(".docx")) {
@@ -239,6 +287,77 @@ public class FileController {
                 }
 
                 return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/public/chat/images/{imageName}")
+    @ApiMessage("View a chat image")
+    public ResponseEntity<?> viewChatImage(@PathVariable(name = "imageName") String imageName) {
+        try {
+            java.nio.file.Path imagePath = Paths.get("public/chat/images/" + imageName);
+            UrlResource resource = new UrlResource(imagePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                // Determine content type based on extension
+                String contentType = MediaType.IMAGE_JPEG_VALUE;
+                if (imageName.toLowerCase().endsWith(".png")) {
+                    contentType = MediaType.IMAGE_PNG_VALUE;
+                } else if (imageName.toLowerCase().endsWith(".gif")) {
+                    contentType = MediaType.IMAGE_GIF_VALUE;
+                } else if (imageName.toLowerCase().endsWith(".webp")) {
+                    contentType = "image/webp";
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/public/chat/files/{fileName}")
+    @ApiMessage("Download a chat file")
+    public ResponseEntity<?> downloadChatFile(@PathVariable(name = "fileName") String fileName) {
+        try {
+            java.nio.file.Path filePath = Paths.get("public/chat/files/" + fileName);
+            UrlResource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                // Determine MIME type
+                String contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+
+                String name = fileName.toLowerCase();
+                if (name.endsWith(".pdf")) {
+                    contentType = MediaType.APPLICATION_PDF_VALUE;
+                } else if (name.endsWith(".doc")) {
+                    contentType = "application/msword";
+                } else if (name.endsWith(".docx")) {
+                    contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                } else if (name.endsWith(".xls")) {
+                    contentType = "application/vnd.ms-excel";
+                } else if (name.endsWith(".xlsx")) {
+                    contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                } else if (name.endsWith(".txt")) {
+                    contentType = MediaType.TEXT_PLAIN_VALUE;
+                } else if (name.endsWith(".zip")) {
+                    contentType = "application/zip";
+                } else if (name.endsWith(".rar")) {
+                    contentType = "application/x-rar-compressed";
+                }
+
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                         .contentType(MediaType.parseMediaType(contentType))
                         .body(resource);
             } else {

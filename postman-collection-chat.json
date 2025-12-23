@@ -1,0 +1,239 @@
+{
+  "info": {
+    "name": "Chat File & Image API",
+    "description": "Collection for testing chat with file and image support",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8089/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_ACCESS_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "conversationId",
+      "value": "YOUR_CONVERSATION_ID_HERE",
+      "type": "string"
+    },
+    {
+      "key": "uploadedFileName",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Upload Image",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('uploadedFileName', jsonData.uploadedFileName);",
+              "    console.log('Uploaded file: ' + jsonData.uploadedFileName);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/files/chat?type=image",
+          "host": ["{{baseUrl}}"],
+          "path": ["files", "chat"],
+          "query": [
+            {
+              "key": "type",
+              "value": "image"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Upload File",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('uploadedFileName', jsonData.uploadedFileName);",
+              "    console.log('Uploaded file: ' + jsonData.uploadedFileName);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/files/chat?type=file",
+          "host": ["{{baseUrl}}"],
+          "path": ["files", "chat"],
+          "query": [
+            {
+              "key": "type",
+              "value": "file"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Send Text Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversationId\": \"{{conversationId}}\",\n  \"message\": \"Hello! This is a text message\",\n  \"messageType\": \"TEXT\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/messages/create",
+          "host": ["{{baseUrl}}"],
+          "path": ["messages", "create"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. Send Image Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversationId\": \"{{conversationId}}\",\n  \"message\": \"Check out this image!\",\n  \"messageType\": \"IMAGE\",\n  \"fileUrl\": \"{{uploadedFileName}}\",\n  \"fileName\": \"my-image.jpg\",\n  \"fileSize\": 156789\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/messages/create",
+          "host": ["{{baseUrl}}"],
+          "path": ["messages", "create"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Send File Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversationId\": \"{{conversationId}}\",\n  \"message\": \"Here is the document\",\n  \"messageType\": \"FILE\",\n  \"fileUrl\": \"{{uploadedFileName}}\",\n  \"fileName\": \"document.pdf\",\n  \"fileSize\": 1024567\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/messages/create",
+          "host": ["{{baseUrl}}"],
+          "path": ["messages", "create"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Get Messages",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/messages?conversationId={{conversationId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["messages"],
+          "query": [
+            {
+              "key": "conversationId",
+              "value": "{{conversationId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
+

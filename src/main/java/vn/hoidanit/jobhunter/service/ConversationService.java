@@ -72,7 +72,7 @@ public class ConversationService {
                             ParticipantInfo.builder()
                                     .userId(request.getParticipantIds().getFirst())
                                     .username(participantInfo.getCompany().getName())
-                                    .name(participantInfo.getName())
+                                    .name(participantInfo.getCompany().getName())
                                     .avatar(participantInfo.getCompany().getLogo())
                                     .build());
 

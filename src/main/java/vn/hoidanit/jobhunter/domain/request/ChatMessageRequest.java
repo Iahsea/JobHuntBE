@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import vn.hoidanit.jobhunter.domain.ChatMessage;
 
 @Data
 @Builder
@@ -14,6 +15,13 @@ public class ChatMessageRequest {
     @NotBlank
     String conversationId;
 
-    @NotBlank
     String message;
+
+    @Builder.Default
+    ChatMessage.MessageType messageType = ChatMessage.MessageType.TEXT;
+
+    // For IMAGE and FILE messages
+    String fileUrl;
+    String fileName;
+    Long fileSize;
 }

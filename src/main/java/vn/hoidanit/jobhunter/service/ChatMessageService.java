@@ -71,6 +71,19 @@ public class ChatMessageService {
         User userInfo = userService.handleGetUserByUsername(email);
         String userId = String.valueOf(userInfo.getId());
         log.info("User ID: {}", userId);
+
+        // Validate based on message type
+        if (request.getMessageType() == ChatMessage.MessageType.TEXT) {
+            if (request.getMessage() == null || request.getMessage().trim().isEmpty()) {
+                throw new IdInvalidException("Message content is required for TEXT messages");
+            }
+        } else if (request.getMessageType() == ChatMessage.MessageType.IMAGE ||
+                   request.getMessageType() == ChatMessage.MessageType.FILE) {
+            if (request.getFileUrl() == null || request.getFileUrl().trim().isEmpty()) {
+                throw new IdInvalidException("File URL is required for IMAGE/FILE messages");
+            }
+        }
+
         var coversation = conversationRepository
                 .findById(request.getConversationId())
                 .orElseThrow(() -> new IdInvalidException("Conversation ID is invalid"));
@@ -89,7 +102,7 @@ public class ChatMessageService {
         ChatMessage chatMessage = chatMessageMapper.toChatMessage(request);
         chatMessage.setSender(ParticipantInfo.builder()
                 .userId(userId)
-                .username(userInfo.getEmail())
+                .username(userInfo.getName())
                 .name(userInfo.getName())
                 .avatar(userInfo.getAvatar())
                 .build());
@@ -97,7 +110,6 @@ public class ChatMessageService {
 
         // Create chat message
         chatMessage = chatMessageRepository.save(chatMessage);
-        String message = objectMapper.writeValueAsString(chatMessage);
 
         // get participants to send message
         List<String> participantIds = coversation.getParticipants().stream()

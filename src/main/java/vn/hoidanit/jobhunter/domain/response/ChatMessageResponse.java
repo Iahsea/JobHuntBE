@@ -5,6 +5,7 @@ import java.time.Instant;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import vn.hoidanit.jobhunter.domain.ChatMessage;
 import vn.hoidanit.jobhunter.domain.ParticipantInfo;
 
 @Data
@@ -19,4 +20,9 @@ public class ChatMessageResponse {
     String message;
     ParticipantInfo sender;
     Instant createdDate;
+
+    ChatMessage.MessageType messageType;
+    String fileUrl;
+    String fileName;
+    Long fileSize;
 }
