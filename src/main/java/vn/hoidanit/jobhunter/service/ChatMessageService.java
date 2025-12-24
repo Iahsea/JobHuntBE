@@ -102,9 +102,9 @@ public class ChatMessageService {
         ChatMessage chatMessage = chatMessageMapper.toChatMessage(request);
         chatMessage.setSender(ParticipantInfo.builder()
                 .userId(userId)
-                .username(userInfo.getName())
-                .name(userInfo.getName())
-                .avatar(userInfo.getAvatar())
+                .username(userInfo.getCompany() != null ? userInfo.getCompany().getName() : userInfo.getName())
+                .name(userInfo.getCompany() != null ? userInfo.getCompany().getName() : userInfo.getName())
+                .avatar(userInfo.getCompany() != null ? userInfo.getCompany().getLogo() : userInfo.getAvatar())
                 .build());
         chatMessage.setCreatedDate(Instant.now());
 
