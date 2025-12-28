@@ -121,6 +121,7 @@ public class ResumeService {
         res.setIntroduction(resume.getIntroduction());
         res.setApplyReason(resume.getApplyReason());
         res.setSocialLinks(resume.getSocialLinks());
+        res.setHrId(resume.getJob().getCompany().getHr().getId());
 
         if (resume.getJob() != null) {
             res.setCompanyName(resume.getJob().getCompany().getName());
@@ -160,7 +161,7 @@ public class ResumeService {
 
         // remove sensitive data
         List<ResFetchResumeDTO> listResume = pageUser.getContent()
-                .stream().map(item -> this.getResume(item))
+                .stream().map(this::getResume)
                 .collect(Collectors.toList());
 
         rs.setResult(listResume);

@@ -1,20 +1,35 @@
 package vn.hoidanit.jobhunter.service;
 
 import java.security.Security;
+import java.text.ParseException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.UUID;
 
+import com.nimbusds.jose.*;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jose.util.Base64;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import vn.hoidanit.jobhunter.domain.User;
 import vn.hoidanit.jobhunter.domain.request.outbound.ExchangeTokenRequest;
+import vn.hoidanit.jobhunter.domain.response.IntrospectResponse;
 import vn.hoidanit.jobhunter.domain.response.ResLoginDTO;
 import vn.hoidanit.jobhunter.domain.response.outbound.ExchangeTokenResponse;
 import vn.hoidanit.jobhunter.repository.UserRepository;
 import vn.hoidanit.jobhunter.repository.httpclient.OutboundIdentityClient;
 import vn.hoidanit.jobhunter.repository.httpclient.OutboundUserClient;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
+import vn.hoidanit.jobhunter.util.error.IdInvalidException;
 import vn.hoidanit.jobhunter.util.constant.StatusEnum;
 
 @Service
@@ -49,6 +64,14 @@ public class AuthService {
     @NonFinal
     @Value("${outbound.identity.redirect-uri}")
     protected String REDIRECT_URI;
+
+    @NonFinal
+    @Value("${hoidanit.jwt.base64-secret}")
+    protected String SIGNER_KEY;
+
+    @NonFinal
+    @Value("${hoidanit.jwt.access-token-validity-in-seconds}")
+    protected String REFRESHABLE_DURATION;
 
     @NonFinal
     protected final String GRANT_TYPE = "authorization_code";
@@ -119,5 +142,39 @@ public class AuthService {
         log.info("RES LOGIN DTO: {}", res);
 
         return res;
+    }
+
+
+    public IntrospectResponse introspect(String token, boolean isRefresh) throws JOSEException, ParseException, IdInvalidException {
+        // Decode the Base64-encoded secret key
+        byte[] keyBytes = Base64.from(SIGNER_KEY).decode();
+        JWSVerifier verifier = new MACVerifier(keyBytes);
+
+        SignedJWT signedJWT = SignedJWT.parse(token);
+
+        Date expiryTime = (isRefresh)
+                ? new Date(signedJWT
+                .getJWTClaimsSet()
+                .getIssueTime()
+                .toInstant()
+                .plus(Long.parseLong(REFRESHABLE_DURATION), ChronoUnit.SECONDS)
+                .toEpochMilli())
+                : signedJWT.getJWTClaimsSet().getExpirationTime();
+
+        var verified = signedJWT.verify(verifier);
+
+        log.info("TOKEN VERIFIED: {}", verified);
+        log.info("Expiry time check: {}", expiryTime.after(new Date()));
+
+        if (!(verified && expiryTime.after(new Date()))) throw new IdInvalidException("Token is invalid");
+
+        //get id
+        String email = signedJWT.getJWTClaimsSet().getSubject();
+        User user = userRepository.findByEmail(email);
+
+        return IntrospectResponse.builder()
+                .valid(true)
+                .userId(String.valueOf(user.getId()))
+                .build();
     }
 }

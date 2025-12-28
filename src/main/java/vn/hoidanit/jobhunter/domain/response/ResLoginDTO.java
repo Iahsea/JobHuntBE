@@ -41,6 +41,7 @@ public class ResLoginDTO {
         private Date dateOfBirth;
         private GenderEnum gender;
         private boolean isUserGoogleAccount;
+        private Long companyId;
         private List<Long> favoriteJobIds;
     }
 
