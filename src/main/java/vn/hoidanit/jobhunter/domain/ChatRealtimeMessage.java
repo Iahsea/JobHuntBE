@@ -14,7 +14,7 @@ import lombok.experimental.FieldDefaults;
 @Table(name = "chat_message")
 @Entity
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ChatMessage {
+public class ChatRealtimeMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;

@@ -4,21 +4,21 @@ import jakarta.validation.constraints.NotBlank;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import vn.hoidanit.jobhunter.domain.ChatMessage;
+import vn.hoidanit.jobhunter.domain.ChatRealtimeMessage;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ChatMessageRequest {
+public class ChatRealtimeMessageRequest {
     @NotBlank
     String conversationId;
 
     String message;
 
     @Builder.Default
-    ChatMessage.MessageType messageType = ChatMessage.MessageType.TEXT;
+    ChatRealtimeMessage.MessageType messageType = ChatRealtimeMessage.MessageType.TEXT;
 
     // For IMAGE and FILE messages
     String fileUrl;

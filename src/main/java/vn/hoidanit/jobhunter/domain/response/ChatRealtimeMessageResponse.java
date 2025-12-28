@@ -5,7 +5,7 @@ import java.time.Instant;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import vn.hoidanit.jobhunter.domain.ChatMessage;
+import vn.hoidanit.jobhunter.domain.ChatRealtimeMessage;
 import vn.hoidanit.jobhunter.domain.ParticipantInfo;
 
 @Data
@@ -13,7 +13,7 @@ import vn.hoidanit.jobhunter.domain.ParticipantInfo;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ChatMessageResponse {
+public class ChatRealtimeMessageResponse {
     String id;
     Long conversationId;
     boolean me;
@@ -21,7 +21,7 @@ public class ChatMessageResponse {
     ParticipantInfo sender;
     Instant createdDate;
 
-    ChatMessage.MessageType messageType;
+    ChatRealtimeMessage.MessageType messageType;
     String fileUrl;
     String fileName;
     Long fileSize;

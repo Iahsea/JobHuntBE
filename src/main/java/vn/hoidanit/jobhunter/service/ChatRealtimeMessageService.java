@@ -18,14 +18,14 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import vn.hoidanit.jobhunter.domain.ChatMessage;
+import vn.hoidanit.jobhunter.domain.ChatRealtimeMessage;
 import vn.hoidanit.jobhunter.domain.ParticipantInfo;
 import vn.hoidanit.jobhunter.domain.User;
 import vn.hoidanit.jobhunter.domain.WebSocketSession;
-import vn.hoidanit.jobhunter.domain.request.ChatMessageRequest;
-import vn.hoidanit.jobhunter.domain.response.ChatMessageResponse;
-import vn.hoidanit.jobhunter.mapper.ChatMessageMapper;
-import vn.hoidanit.jobhunter.repository.ChatMessageRepository;
+import vn.hoidanit.jobhunter.domain.request.ChatRealtimeMessageRequest;
+import vn.hoidanit.jobhunter.domain.response.ChatRealtimeMessageResponse;
+import vn.hoidanit.jobhunter.mapper.ChatRealtimeMessageMapper;
+import vn.hoidanit.jobhunter.repository.ChatRealtimeMessageRepository;
 import vn.hoidanit.jobhunter.repository.ConversationRepository;
 import vn.hoidanit.jobhunter.repository.WebSocketSessionRepository;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
@@ -34,19 +34,19 @@ import vn.hoidanit.jobhunter.util.error.IdInvalidException;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class ChatMessageService {
+public class ChatRealtimeMessageService {
     SocketIOServer socketIOServer;
 
-    ChatMessageRepository chatMessageRepository;
+    ChatRealtimeMessageRepository chatRealtimeMessageRepository;
     ConversationRepository conversationRepository;
     UserService userService;
 
-    ChatMessageMapper chatMessageMapper;
+    ChatRealtimeMessageMapper chatRealtimeMessageMapper;
 
     WebSocketSessionRepository webSocketSessionRepository;
     ObjectMapper objectMapper;
 
-    public List<ChatMessageResponse> getMessages(String conversationId) throws IdInvalidException {
+    public List<ChatRealtimeMessageResponse> getMessages(String conversationId) throws IdInvalidException {
         // Validate conversationId
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User userInfo = userService.handleGetUserByUsername(email);
@@ -60,12 +60,12 @@ public class ChatMessageService {
                 .findAny()
                 .orElseThrow(() -> new IdInvalidException("Conversation ID is invalid 123"));
 
-        var messages = chatMessageRepository.findAllByConversationIdOrderByCreatedDateDesc(conversationId);
+        var messages = chatRealtimeMessageRepository.findAllByConversationIdOrderByCreatedDateDesc(conversationId);
 
-        return messages.stream().map(chatMessage -> this.toChatMessageResponse(chatMessage, userId)).toList();
+        return messages.stream().map(chatRealtimeMessage -> this.toChatRealtimeMessageResponse(chatRealtimeMessage, userId)).toList();
     }
 
-    public ChatMessageResponse create(ChatMessageRequest request) throws JsonProcessingException, IdInvalidException {
+    public ChatRealtimeMessageResponse create(ChatRealtimeMessageRequest request) throws JsonProcessingException, IdInvalidException {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         // Validate conversationId
         User userInfo = userService.handleGetUserByUsername(email);
@@ -73,12 +73,12 @@ public class ChatMessageService {
         log.info("User ID: {}", userId);
 
         // Validate based on message type
-        if (request.getMessageType() == ChatMessage.MessageType.TEXT) {
+        if (request.getMessageType() == ChatRealtimeMessage.MessageType.TEXT) {
             if (request.getMessage() == null || request.getMessage().trim().isEmpty()) {
                 throw new IdInvalidException("Message content is required for TEXT messages");
             }
-        } else if (request.getMessageType() == ChatMessage.MessageType.IMAGE ||
-                   request.getMessageType() == ChatMessage.MessageType.FILE) {
+        } else if (request.getMessageType() == ChatRealtimeMessage.MessageType.IMAGE ||
+                   request.getMessageType() == ChatRealtimeMessage.MessageType.FILE) {
             if (request.getFileUrl() == null || request.getFileUrl().trim().isEmpty()) {
                 throw new IdInvalidException("File URL is required for IMAGE/FILE messages");
             }
@@ -99,17 +99,17 @@ public class ChatMessageService {
 //            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
 //        }
         // Build Chat message Info
-        ChatMessage chatMessage = chatMessageMapper.toChatMessage(request);
-        chatMessage.setSender(ParticipantInfo.builder()
+        ChatRealtimeMessage chatRealtimeMessage = chatRealtimeMessageMapper.toChatRealtimeMessage(request);
+        chatRealtimeMessage.setSender(ParticipantInfo.builder()
                 .userId(userId)
                 .username(userInfo.getCompany() != null ? userInfo.getCompany().getName() : userInfo.getName())
                 .name(userInfo.getCompany() != null ? userInfo.getCompany().getName() : userInfo.getName())
                 .avatar(userInfo.getCompany() != null ? userInfo.getCompany().getLogo() : userInfo.getAvatar())
                 .build());
-        chatMessage.setCreatedDate(Instant.now());
+        chatRealtimeMessage.setCreatedDate(Instant.now());
 
         // Create chat message
-        chatMessage = chatMessageRepository.save(chatMessage);
+        chatRealtimeMessage = chatRealtimeMessageRepository.save(chatRealtimeMessage);
 
         // get participants to send message
         List<String> participantIds = coversation.getParticipants().stream()
@@ -121,15 +121,15 @@ public class ChatMessageService {
                         .collect(Collectors.toMap(WebSocketSession::getSocketSessionId, Function.identity()));
 
         // Publish socket event to clients
-        ChatMessageResponse chatMessageResponse = chatMessageMapper.toChatMessageResponse(chatMessage);
+        ChatRealtimeMessageResponse chatRealtimeMessageResponse = chatRealtimeMessageMapper.toChatRealtimeMessageResponse(chatRealtimeMessage);
         socketIOServer.getAllClients().forEach(client -> {
             var webSocketSession =
                     webSocketSessionList.get(client.getSessionId().toString());
 
             if (Objects.nonNull(webSocketSession)) {
                 try {
-                    chatMessageResponse.setMe(webSocketSession.getUserId().equals(userId));
-                    client.sendEvent("message", objectMapper.writeValueAsString(chatMessageResponse));
+                    chatRealtimeMessageResponse.setMe(webSocketSession.getUserId().equals(userId));
+                    client.sendEvent("message", objectMapper.writeValueAsString(chatRealtimeMessageResponse));
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
                 }
@@ -137,14 +137,14 @@ public class ChatMessageService {
         });
 
         // convert to Response
-        return toChatMessageResponse(chatMessage, userId);
+        return toChatRealtimeMessageResponse(chatRealtimeMessage, userId);
     }
 
-    private ChatMessageResponse toChatMessageResponse(ChatMessage chatMessage, String userId) {
-        var chatMessageResponse = chatMessageMapper.toChatMessageResponse(chatMessage);
+    private ChatRealtimeMessageResponse toChatRealtimeMessageResponse(ChatRealtimeMessage chatRealtimeMessage, String userId) {
+        var chatRealtimeMessageResponse = chatRealtimeMessageMapper.toChatRealtimeMessageResponse(chatRealtimeMessage);
 
-        chatMessageResponse.setMe(userId.equals(chatMessage.getSender().getUserId()));
+        chatRealtimeMessageResponse.setMe(userId.equals(chatRealtimeMessage.getSender().getUserId()));
 
-        return chatMessageResponse;
+        return chatRealtimeMessageResponse;
     }
 }
