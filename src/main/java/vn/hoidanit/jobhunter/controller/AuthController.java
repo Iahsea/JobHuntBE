@@ -87,23 +87,8 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        ResLoginDTO res = new ResLoginDTO();
-        User currentUserDB = this.userService.handleGetUserByUsername(loginDto.getUsername());
-        if (currentUserDB != null) {
-            ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
-                    currentUserDB.getId(),
-                    currentUserDB.getEmail(),
-                    currentUserDB.getName(),
-                    currentUserDB.getRole(),
-                    currentUserDB.getAvatar(),
-                    currentUserDB.getPhoneNumber(),
-                    currentUserDB.getDateOfBirth(),
-                    currentUserDB.getGender(),
-                    currentUserDB.isGoogleAccount(),
-                    currentUserDB.getCompany().getId(),
-                    currentUserDB.getFavoriteJobIds());
-
         //  Build UserLogin (NULL-SAFE company)
+        User currentUserDB = this.userService.handleGetUserByUsername(loginDto.getUsername());
         ResLoginDTO.UserLogin userLogin = null;
         if (currentUserDB != null) {
             Long companyId = currentUserDB.getCompany() != null
@@ -115,7 +100,7 @@ public class AuthController {
                     .email(currentUserDB.getEmail())
                     .name(currentUserDB.getName())
                     .role(currentUserDB.getRole())
-                    .companyId(currentUserDB.getCompany().getId()) //  null-safe
+                    .companyId(companyId)
                     .avatar(currentUserDB.getAvatar())
                     .phoneNumber(currentUserDB.getPhoneNumber())
                     .dateOfBirth(currentUserDB.getDateOfBirth())
@@ -125,7 +110,7 @@ public class AuthController {
                     .build();
         }
 
-        // 4) Build response
+        // Build response
         ResLoginDTO res = ResLoginDTO.builder()
                 .user(userLogin)
                 .build();
@@ -197,18 +182,21 @@ public class AuthController {
         ResLoginDTO res = new ResLoginDTO();
         User currentUserDB = this.userService.handleGetUserByUsername(email);
         if (currentUserDB != null) {
+            Long companyId = currentUserDB.getCompany() != null
+                    ? currentUserDB.getCompany().getId()
+                    : null;
+
             ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
                     currentUserDB.getId(),
                     currentUserDB.getEmail(),
                     currentUserDB.getName(),
                     currentUserDB.getRole(),
-                    currentUserDB.getCompany().getId(),
+                    companyId,
                     currentUserDB.getAvatar(),
                     currentUserDB.getPhoneNumber(),
                     currentUserDB.getDateOfBirth(),
                     currentUserDB.getGender(),
                     currentUserDB.isGoogleAccount(),
-                    currentUserDB.getCompany().getId(),
                     currentUserDB.getFavoriteJobIds());
             res.setUser(userLogin);
         }
