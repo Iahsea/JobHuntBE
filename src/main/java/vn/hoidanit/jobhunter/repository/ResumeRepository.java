@@ -8,10 +8,14 @@ import org.springframework.stereotype.Repository;
 
 import vn.hoidanit.jobhunter.domain.Resume;
 
+import java.util.Optional;
+
 @Repository
 public interface ResumeRepository extends JpaRepository<Resume, Long>,
                 JpaSpecificationExecutor<Resume> {
 
         Page<Resume> findByUserId(long id, Pageable pageable);
+
+        boolean existsByUserIdAndJobId(Long userId, Long jobId);
 
 }

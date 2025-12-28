@@ -75,6 +75,16 @@ public class ResumeService {
         return true;
     }
 
+    public boolean checkResumeExists(Resume resume) {
+        if (resume == null || resume.getUser() == null || resume.getJob() == null) {
+            return false;
+        }
+        Long userId = resume.getUser().getId();
+        Long jobId = resume.getJob().getId();
+        return resumeRepository.existsByUserIdAndJobId(userId, jobId);
+    }
+
+
     public ResCreateResumeDTO create(Resume resume) {
         resume = this.resumeRepository.save(resume);
 
