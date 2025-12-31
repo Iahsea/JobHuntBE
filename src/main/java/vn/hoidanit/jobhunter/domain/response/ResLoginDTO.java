@@ -9,7 +9,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.Role;
 import vn.hoidanit.jobhunter.util.constant.GenderEnum;
 
@@ -34,14 +33,12 @@ public class ResLoginDTO {
         private String email;
         private String name;
         private Role role;
-        @JsonProperty("company_id")
         private Long companyId;
         private String avatar;
         private String phoneNumber;
         private Date dateOfBirth;
         private GenderEnum gender;
         private boolean isUserGoogleAccount;
-        private Long companyId;
         private List<Long> favoriteJobIds;
     }
 
