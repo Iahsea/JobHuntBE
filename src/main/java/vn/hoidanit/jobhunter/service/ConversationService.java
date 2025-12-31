@@ -155,4 +155,9 @@ public class ConversationService {
         return response;
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Conversation getConversationById(Long conversationId) {
+        return conversationRepository.findByIdWithParticipants(conversationId).orElse(null);
+    }
+
 }

@@ -10,6 +10,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import vn.hoidanit.jobhunter.repository.WebSocketSessionRepository;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -25,6 +27,10 @@ public class WebSocketSessionService {
     @Transactional
     public void deleteBySocketSessionId(String socketSessionId) {
         webSocketSessionRepository.deleteBySocketSessionId(socketSessionId);
+    }
+
+    public List<WebSocketSession> getSessionsByUserIds(List<String> userIds) {
+        return webSocketSessionRepository.findAllByUserIdIn(userIds);
     }
 }
 
