@@ -30,6 +30,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
 import vn.hoidanit.jobhunter.util.constant.GenderEnum;
+import vn.hoidanit.jobhunter.util.constant.StatusEnum;
 
 @Entity
 @Table(name = "users")
@@ -69,6 +70,9 @@ public class User {
 
     @lombok.Builder.Default
     private boolean verified = false;
+
+    @Enumerated(EnumType.STRING)
+    private StatusEnum status;
 
     private boolean isGoogleAccount = false;
 

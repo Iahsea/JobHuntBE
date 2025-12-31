@@ -51,17 +51,51 @@ public class CompanyService {
     }
 
     public Company handleUpdateCompany(Company c) {
-        Optional<Company> companyOptional = this.companyRepository.findById(c.getId());
-        if (companyOptional.isPresent()) {
-            Company currentCompany = companyOptional.get();
-            currentCompany.setLogo(c.getLogo());
-            currentCompany.setName(c.getName());
-            currentCompany.setDescription(c.getDescription());
-            currentCompany.setAddress(c.getAddress());
-            return this.companyRepository.save(currentCompany);
+        Company currentCompany = this.companyRepository.findById(c.getId())
+                .orElse(null);
+
+        if (currentCompany == null) {
+            return null;
         }
-        return null;
+
+        // update từng field nếu frontend có gửi lên
+        if (c.getName() != null) {
+            currentCompany.setName(c.getName());
+        }
+        if (c.getDescription() != null) {
+            currentCompany.setDescription(c.getDescription());
+        }
+        if (c.getAddress() != null) {
+            currentCompany.setAddress(c.getAddress());
+        }
+        if (c.getLogo() != null) {
+            currentCompany.setLogo(c.getLogo());
+        }
+        if (c.getCoverImage() != null) {
+            currentCompany.setCoverImage(c.getCoverImage());
+        }
+        if (c.getWebsite() != null) {
+            currentCompany.setWebsite(c.getWebsite());
+        }
+        if (c.getCompanySize() != null) {
+            currentCompany.setCompanySize(c.getCompanySize());
+        }
+        if (c.getFoundedDate() != null) {
+            currentCompany.setFoundedDate(c.getFoundedDate());
+        }
+        if (c.getEmployeeCount() != null) {
+            currentCompany.setEmployeeCount(c.getEmployeeCount());
+        }
+        if (c.getBenefits() != null) {
+            currentCompany.setBenefits(c.getBenefits());
+        }
+        if (c.getSocialLinks() != null) {
+            currentCompany.setSocialLinks(c.getSocialLinks());
+        }
+
+        return this.companyRepository.save(currentCompany);
     }
+
 
     public void handleDeleteCompany(long id) {
         Optional<Company> comOptional = this.companyRepository.findById(id);

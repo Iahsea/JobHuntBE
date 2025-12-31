@@ -47,11 +47,17 @@ public class CompanyController {
         return ResponseEntity.ok(this.companyService.handleGetCompany(spec, pageable));
     }
 
-    @PutMapping("/companies")
-    public ResponseEntity<Company> updateCompany(@Valid @RequestBody Company reqCompany) {
+    @PutMapping("/companies/{id}")
+    public ResponseEntity<Company> updateCompany(
+            @PathVariable("id") long id,
+            @Valid @RequestBody Company reqCompany
+    ) {
+        reqCompany.setId(id);   // quan trọng
         Company updatedCompany = this.companyService.handleUpdateCompany(reqCompany);
+
         return ResponseEntity.ok(updatedCompany);
     }
+
 
     @DeleteMapping("/companies/{id}")
     public ResponseEntity<Void> deleteCompany(@PathVariable("id") long id) {
