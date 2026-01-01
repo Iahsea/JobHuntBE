@@ -45,7 +45,7 @@ public class ChatService {
     /**
      * Tạo session chat mới cho user
      */
-    public ChatSession createSession(String title, String email) throws IdInvalidException {
+    public ResChatSessionDTO createSession(String title, String email) throws IdInvalidException {
         User user = this.userService.handleGetUserByUsername(email);
         if (user == null) {
             throw new IdInvalidException("User không tồn tại");
@@ -54,7 +54,9 @@ public class ChatService {
         ChatSession session = new ChatSession();
         session.setTitle(title);
         session.setUser(user);
-        return this.chatSessionRepository.save(session);
+
+        ChatSession chatSession = chatSessionRepository.save(session);
+        return convertToDTO(chatSession);
     }
 
     /**

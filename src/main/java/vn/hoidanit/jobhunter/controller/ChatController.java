@@ -27,13 +27,13 @@ public class ChatController {
 
     @PostMapping("/sessions")
     @ApiMessage("Create a new chat session")
-    public ResponseEntity<ChatSession> createSession(@RequestBody CreateSessionRequest request)
+    public ResponseEntity<ResChatSessionDTO> createSession(@RequestBody CreateSessionRequest request)
             throws IdInvalidException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
-        ChatSession session = this.chatService.createSession(request.getTitle(), email);
-        return ResponseEntity.status(HttpStatus.CREATED).body(session);
+        ResChatSessionDTO sessionDTO = this.chatService.createSession(request.getTitle(), email);
+        return ResponseEntity.status(HttpStatus.CREATED).body(sessionDTO);
     }
 
     @PostMapping("/sessions/{id}/chat")
