@@ -10,4 +10,6 @@ public interface WebSocketSessionRepository extends JpaRepository<WebSocketSessi
     List<WebSocketSession> findAllByUserIdIn(List<String> participantIds);
 
     void deleteBySocketSessionId(String socketSessionId);
+
+    WebSocketSession findBySocketSessionId(String socketSessionId);
 }

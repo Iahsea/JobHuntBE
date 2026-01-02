@@ -327,5 +327,13 @@ public class UserService {
         return userRepository.save(currentUser);
     }
 
+    public void updateLastSeen(Long userId, java.time.Instant lastSeen) {
+        User user = fetchUserById(userId);
+        if (user != null) {
+            user.setLastSeen(lastSeen);
+            userRepository.save(user);
+        }
+    }
+
 
 }
