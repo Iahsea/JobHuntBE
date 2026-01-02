@@ -23,8 +23,10 @@ import vn.hoidanit.jobhunter.domain.Conversation;
 import vn.hoidanit.jobhunter.domain.WebSocketSession;
 import vn.hoidanit.jobhunter.domain.request.TypingEventRequest;
 import vn.hoidanit.jobhunter.domain.response.IntrospectResponse;
+import vn.hoidanit.jobhunter.domain.response.PresenceEvent;
 import vn.hoidanit.jobhunter.service.AuthService;
 import vn.hoidanit.jobhunter.service.ConversationService;
+import vn.hoidanit.jobhunter.service.PresenceService;
 import vn.hoidanit.jobhunter.service.WebSocketSessionService;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
 
@@ -41,6 +43,7 @@ public class SocketHandler {
     WebSocketSessionService webSocketSessionService;
     AuthService authService;
     ConversationService conversationService;
+    PresenceService presenceService;
 
     @OnConnect
     public void clientConnected(SocketIOClient client) throws IdInvalidException, ParseException, JOSEException {
@@ -54,14 +57,41 @@ public class SocketHandler {
         // If Token is invalid disconnect
         if (introspect.isValid()) {
             log.info("Client connected: {}", client.getSessionId());
+            String userIdString = introspect.getUserId();
+            Long userId = Long.parseLong(userIdString);
+
             WebSocketSession webSocketSession = WebSocketSession.builder()
-                    .userId(introspect.getUserId())
+                    .userId(userIdString)
                     .socketSessionId(client.getSessionId().toString())
                     .createdAt(Instant.now())
                     .build();
 
             webSocketSessionService.create(webSocketSession);
-            log.info("WebSocket session created for user: {}", introspect.getUserId());
+            log.info("WebSocket session created for user: {}", userId);
+
+            // Bước 1: Gửi danh sách tất cả users đang online CHO USER MỚI này trước
+            java.util.Set<Long> currentOnlineUsers = presenceService.getAllOnlineUserIds();
+            for (Long onlineUserId : currentOnlineUsers) {
+                PresenceEvent existingUserEvent = PresenceEvent.builder()
+                        .userId(onlineUserId)
+                        .online(true)
+                        .lastSeen(null)
+                        .build();
+                client.sendEvent("userPresence", existingUserEvent);
+            }
+            log.info("Sent {} existing online users to new client: {}", currentOnlineUsers.size(), userId);
+
+            // Bước 2: Đánh dấu user MỚI này là online
+            presenceService.userConnected(userId);
+
+            // Bước 3: Broadcast presence event của USER MỚI này đến TẤT CẢ clients (bao gồm cả chính nó)
+            PresenceEvent newUserPresenceEvent = PresenceEvent.builder()
+                    .userId(userId)
+                    .online(true)
+                    .lastSeen(null)
+                    .build();
+            server.getBroadcastOperations().sendEvent("userPresence", newUserPresenceEvent);
+            log.info("Broadcasted online status for user: {}", userId);
         } else {
             log.error("Authentication fail: {}", client.getSessionId());
             client.disconnect();
@@ -71,7 +101,30 @@ public class SocketHandler {
     @OnDisconnect
     public void clientDisconnected(SocketIOClient client) {
         log.info("Client disConnected: {}", client.getSessionId());
-        webSocketSessionService.deleteBySocketSessionId(client.getSessionId().toString());
+
+        // Lấy thông tin user từ session trước khi xóa
+        WebSocketSession session = webSocketSessionService.getBySocketSessionId(client.getSessionId().toString());
+
+        if (session != null) {
+            Long userId = Long.parseLong(session.getUserId());
+
+            // Xóa session
+            webSocketSessionService.deleteBySocketSessionId(client.getSessionId().toString());
+
+            // Đánh dấu user disconnected và kiểm tra xem có hoàn toàn offline không
+            boolean completelyOffline = presenceService.userDisconnected(userId);
+
+            // Broadcast presence event
+            PresenceEvent presenceEvent = PresenceEvent.builder()
+                    .userId(userId)
+                    .online(!completelyOffline)
+                    .lastSeen(completelyOffline ? presenceService.getCurrentTime() : null)
+                    .build();
+            server.getBroadcastOperations().sendEvent("userPresence", presenceEvent);
+            log.info("Broadcasted {} status for user: {}", completelyOffline ? "offline" : "still online", userId);
+        } else {
+            webSocketSessionService.deleteBySocketSessionId(client.getSessionId().toString());
+        }
     }
 
     @OnEvent("typing")

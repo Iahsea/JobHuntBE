@@ -32,5 +32,9 @@ public class WebSocketSessionService {
     public List<WebSocketSession> getSessionsByUserIds(List<String> userIds) {
         return webSocketSessionRepository.findAllByUserIdIn(userIds);
     }
+
+    public WebSocketSession getBySocketSessionId(String socketSessionId) {
+        return webSocketSessionRepository.findBySocketSessionId(socketSessionId);
+    }
 }
 
