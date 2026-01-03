@@ -30,15 +30,18 @@ public class JobService {
     private final SkillRepository skillRepository;
     private final CompanyRepository companyRepository;
     private final UserService userService;
+    private final JobNotificationService jobNotificationService;
 
     public JobService(JobRepository jobRepository,
             SkillRepository skillRepository,
             CompanyRepository companyRepository,
-            UserService userService) {
+            UserService userService,
+            JobNotificationService jobNotificationService) {
         this.jobRepository = jobRepository;
         this.skillRepository = skillRepository;
         this.companyRepository = companyRepository;
         this.userService = userService;
+        this.jobNotificationService = jobNotificationService;
     }
 
     public Optional<Job> fetchJobById(long id) {
@@ -66,6 +69,9 @@ public class JobService {
 
         // create job
         Job currentJob = this.jobRepository.save(j);
+
+        // Gửi thông báo cho users có skills phù hợp
+        jobNotificationService.notifyNewJob(currentJob);
 
         // convert response
         ResCreateJobDTO dto = new ResCreateJobDTO();
@@ -149,7 +155,10 @@ public class JobService {
         dto.setYearsOfExperience(currentJob.getYearsOfExperience());
 
         if (currentJob.getSkills() != null) {
-            dto.setSkills(currentJob.getSkills());
+            List<String> skills = currentJob.getSkills()
+                    .stream().map(item -> item.getName())
+                    .collect(Collectors.toList());
+            dto.setSkills(skills);
         }
 
         return dto;

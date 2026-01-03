@@ -1,5 +1,6 @@
 package vn.hoidanit.jobhunter.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import vn.hoidanit.jobhunter.repository.UserProfileRepository;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserProfileService {
 
     private final UserProfileRepository userProfileRepository;
@@ -23,6 +25,7 @@ public class UserProfileService {
     }
 
     public UserProfile updateUserProfile(Long id, UserProfile userProfile) {
+        log.info("UserProfile after update: {}", userProfile);
         UserProfile existingProfile = this.userProfileRepository.findByUserId(id);
         if (existingProfile != null) {
             if (userProfile.getTitle() != null) {
@@ -57,6 +60,10 @@ public class UserProfileService {
             }
             if (userProfile.getGithubLink() != null) {
                 existingProfile.setGithubLink(userProfile.getGithubLink());
+            }
+
+            if(userProfile.getSkills() != null) {
+                existingProfile.setSkills(userProfile.getSkills());
             }
 
             return this.userProfileRepository.save(existingProfile);

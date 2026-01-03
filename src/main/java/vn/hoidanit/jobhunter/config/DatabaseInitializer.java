@@ -118,6 +118,30 @@ public class DatabaseInitializer implements CommandLineRunner {
             this.userRepository.save(adminUser);
         }
 
+//        if (countUsers <= 20) {
+//
+//            Role userRole = roleRepository.findByName("USER");
+//            List<User> users = new ArrayList<>();
+//
+//            for (int i = 1; i <= 10; i++) {
+//                User user = User.builder()
+//                        .email("hr" + i + "@gmail.com")
+//                        .address("hn")
+//                        .age(20 + i)
+//                        .gender(GenderEnum.MALE)
+//                        .name("HR User " + i)
+//                        .password(passwordEncoder.encode("123456"))
+//                        .verified(true) // override default false
+//                        .role(userRole)
+//                        .build();
+//
+//                users.add(user);
+//            }
+//
+//            userRepository.saveAll(users);
+//        }
+
+
         if (countPermissions > 0 && countRoles > 0 && countUsers > 0) {
             System.out.println(">>> SKIP INIT DATABASE ~ ALREADY HAVE DATA...");
         } else

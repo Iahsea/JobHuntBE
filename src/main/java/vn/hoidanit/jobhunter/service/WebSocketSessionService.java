@@ -37,4 +37,3 @@ public class WebSocketSessionService {
         return webSocketSessionRepository.findBySocketSessionId(socketSessionId);
     }
 }
-

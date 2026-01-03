@@ -159,5 +159,4 @@ public class ConversationService {
     public Conversation getConversationById(Long conversationId) {
         return conversationRepository.findByIdWithParticipants(conversationId).orElse(null);
     }
-
 }
