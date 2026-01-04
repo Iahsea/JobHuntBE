@@ -62,6 +62,7 @@ public class Company {
 //    private List<User> users;
 
     @OneToOne
+    @JsonIgnore
     @JoinColumn(name = "hr_id")
     private User hr;
 

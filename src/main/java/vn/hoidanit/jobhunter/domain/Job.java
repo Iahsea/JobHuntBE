@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -64,7 +65,7 @@ public class Job {
 
     @ManyToOne
     @JoinColumn(name = "company_id")
-    @JsonIgnore
+    @JsonIgnoreProperties(value = { "jobs" }, allowSetters = true)
     private Company company;
 
     @ManyToMany(fetch = FetchType.LAZY)
