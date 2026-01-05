@@ -81,6 +81,8 @@ public class User {
     @Column(name = "job_id")
     private List<Long> favoriteJobIds;
 
+    private Instant lastSeen;
+
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;
