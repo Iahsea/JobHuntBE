@@ -45,8 +45,7 @@ public class ConversationService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         var userInfo = userService.handleGetUserByUsername(email);
         String userId = String.valueOf(userInfo.getId());
-        var participantInfo =
-                userService.fetchUserById(Long.parseLong(request.getParticipantIds().getFirst()));
+        var participantInfo = userService.fetchUserById(Long.parseLong(request.getParticipantIds().get(0)));
 
         if (Objects.isNull(participantInfo)) {
             throw new IdInvalidException("User or Participant ID is invalid");
@@ -70,7 +69,7 @@ public class ConversationService {
                                     .avatar(userInfo.getAvatar())
                                     .build(),
                             ParticipantInfo.builder()
-                                    .userId(request.getParticipantIds().getFirst())
+                                    .userId(request.getParticipantIds().get(0))
                                     .username(participantInfo.getCompany().getName())
                                     .name(participantInfo.getCompany().getName())
                                     .avatar(participantInfo.getCompany().getLogo())
@@ -93,7 +92,8 @@ public class ConversationService {
 
     private String generateParticipantHash(List<Long> ids) {
         StringJoiner stringJoiner = new StringJoiner("_");
-        for(Long id: ids) {;
+        for (Long id : ids) {
+            ;
             stringJoiner.add(String.valueOf(id));
         }
 
@@ -102,22 +102,24 @@ public class ConversationService {
         return stringJoiner.toString();
     }
 
-//    private ConversationResponse toConversationResponse(Conversation conversation, String userId) {
-//        ConversationResponse conversationResponse = conversationMapper.toConversationResponse(conversation);
-//
-//        log.info("conversationResponse: {}", conversationResponse);
-//
-//        conversation.getParticipants().stream()
-//                .filter(participantInfo -> !participantInfo.getUserId().equals(userId))
-//                .findFirst()
-//                .ifPresent(participantInfo -> {
-//                    log.info("participantInfo123: {}", participantInfo);
-//                    conversationResponse.setConversationName(participantInfo.getUsername());
-//                    conversationResponse.setConversationAvatar(participantInfo.getAvatar());
-//                });
-//
-//        return conversationResponse;
-//    }
+    // private ConversationResponse toConversationResponse(Conversation
+    // conversation, String userId) {
+    // ConversationResponse conversationResponse =
+    // conversationMapper.toConversationResponse(conversation);
+    //
+    // log.info("conversationResponse: {}", conversationResponse);
+    //
+    // conversation.getParticipants().stream()
+    // .filter(participantInfo -> !participantInfo.getUserId().equals(userId))
+    // .findFirst()
+    // .ifPresent(participantInfo -> {
+    // log.info("participantInfo123: {}", participantInfo);
+    // conversationResponse.setConversationName(participantInfo.getUsername());
+    // conversationResponse.setConversationAvatar(participantInfo.getAvatar());
+    // });
+    //
+    // return conversationResponse;
+    // }
 
     private ConversationResponse toConversationResponse(Conversation conversation, String userId) {
         ConversationResponse response = conversationMapper.toConversationResponse(conversation);

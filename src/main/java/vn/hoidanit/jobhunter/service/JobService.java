@@ -44,7 +44,7 @@ public class JobService {
             SkillRepository skillRepository,
             CompanyRepository companyRepository,
             UserService userService,
-            RestTemplate restTemplate) {
+            RestTemplate restTemplate,
             JobNotificationService jobNotificationService) {
         this.jobRepository = jobRepository;
         this.skillRepository = skillRepository;
