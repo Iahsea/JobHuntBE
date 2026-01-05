@@ -3,10 +3,12 @@ package vn.hoidanit.jobhunter.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import vn.hoidanit.jobhunter.domain.ChatSession;
 import vn.hoidanit.jobhunter.domain.response.ChatbotResponse;
@@ -27,22 +29,35 @@ public class ChatController {
 
     @PostMapping("/sessions")
     @ApiMessage("Create a new chat session")
-    public ResponseEntity<ChatSession> createSession(@RequestBody CreateSessionRequest request)
+    public ResponseEntity<ResChatSessionDTO> createSession(@RequestBody CreateSessionRequest request)
             throws IdInvalidException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
-        ChatSession session = this.chatService.createSession(request.getTitle(), email);
-        return ResponseEntity.status(HttpStatus.CREATED).body(session);
+        ResChatSessionDTO sessionDTO = this.chatService.createSession(request.getTitle(), email);
+        return ResponseEntity.status(HttpStatus.CREATED).body(sessionDTO);
     }
 
+    // Endpoint for JSON request (without file) - for backward compatibility
     @PostMapping("/sessions/{id}/chat")
     @ApiMessage("Send message to AI and get response")
     public ResponseEntity<ChatbotResponse> chatWithAI(
             @PathVariable("id") long sessionId,
             @RequestBody SendMessageRequest request) throws IdInvalidException {
 
-        ChatbotResponse response = this.chatService.sendMessageToAI(sessionId, request.getMessage());
+        ChatbotResponse response = this.chatService.sendMessageToAI(sessionId, request.getMessage(), null);
+        return ResponseEntity.ok(response);
+    }
+
+    // Endpoint for multipart request (with optional PDF file)
+    @PostMapping(value = "/sessions/{id}/chat-with-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ApiMessage("Send message to AI with optional PDF file upload")
+    public ResponseEntity<ChatbotResponse> chatWithAIAndFile(
+            @PathVariable("id") long sessionId,
+            @RequestParam("message") String message,
+            @RequestPart(value = "file", required = false) MultipartFile file) throws IdInvalidException {
+
+        ChatbotResponse response = this.chatService.sendMessageToAI(sessionId, message, file);
         return ResponseEntity.ok(response);
     }
 
