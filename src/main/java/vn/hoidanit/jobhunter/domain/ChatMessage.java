@@ -27,11 +27,24 @@ public class ChatMessage {
     private String role; // "user" hoặc "assistant"
 
     @Column(columnDefinition = "MEDIUMTEXT")
-    @NotBlank(message = "Content không được để trống")
     private String content;
+
+    // Message type: TEXT, FILE
+    @Enumerated(EnumType.STRING)
+    private MessageType messageType = MessageType.TEXT;
+
+    // For FILE messages
+    private String fileUrl;
+    private String fileName;
+    private Long fileSize; // in bytes
 
     private Instant createdAt;
     private String createdBy;
+
+    public enum MessageType {
+        TEXT,
+        FILE
+    }
 
     @PrePersist
     public void handleBeforeCreate() {
@@ -39,5 +52,8 @@ public class ChatMessage {
                 ? SecurityUtil.getCurrentUserLogin().get()
                 : "";
         this.createdAt = Instant.now();
+        if (this.messageType == null) {
+            this.messageType = MessageType.TEXT;
+        }
     }
 }

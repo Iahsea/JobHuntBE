@@ -36,6 +36,9 @@ import vn.hoidanit.jobhunter.util.error.IdInvalidException;
 @Slf4j
 public class ChatService {
 
+    @Value("${hoidanit.upload-file.base-uri}")
+    private String baseURI;
+
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserService userService;
@@ -79,9 +82,11 @@ public class ChatService {
     }
 
     /**
-     * Lưu một message vào database
+     * Lưu một message vào database (có thể kèm file)
+     * 
+     * @param file File đính kèm (optional, có thể null)
      */
-    public ChatMessage addMessage(long sessionId, String role, String content) throws IdInvalidException {
+    public ChatMessage addMessage(long sessionId, String role, String content, MultipartFile file) throws Exception {
         Optional<ChatSession> sessionOptional = this.chatSessionRepository.findById(sessionId);
         if (!sessionOptional.isPresent()) {
             throw new IdInvalidException("Chat session không tồn tại");
@@ -91,6 +96,37 @@ public class ChatService {
         message.setChatSession(sessionOptional.get());
         message.setRole(role);
         message.setContent(content);
+
+        // Xử lý file nếu có
+        if (file != null && !file.isEmpty()) {
+            String fileName = file.getOriginalFilename();
+            List<String> allowedExtensions = Arrays.asList("pdf", "doc", "docx", "xls", "xlsx", "txt", "zip", "rar");
+            boolean isValid = allowedExtensions.stream()
+                    .anyMatch(ext -> fileName.toLowerCase().endsWith(ext));
+
+            if (!isValid) {
+                throw new IdInvalidException("Invalid file extension. Only allows " + allowedExtensions.toString());
+            }
+
+            // Lưu file vào thư mục chat/files
+            String mappedFolder = "chat/files";
+            this.fileService.createDirectory(baseURI + mappedFolder);
+            String uploadedFileName = this.fileService.store(file, mappedFolder);
+
+            // Set thông tin file
+            message.setMessageType(ChatMessage.MessageType.FILE);
+            message.setFileUrl(mappedFolder + "/" + uploadedFileName);
+            message.setFileName(fileName);
+            message.setFileSize(file.getSize());
+
+            // Nếu content trống, set mô tả file
+            if (content == null || content.trim().isEmpty()) {
+                message.setContent("[File: " + fileName + "]");
+            }
+        } else {
+            // Không có file, message text thông thường
+            message.setMessageType(ChatMessage.MessageType.TEXT);
+        }
 
         ChatMessage savedMessage = this.chatMessageRepository.save(message);
 
@@ -165,12 +201,12 @@ public class ChatService {
                     requestEntity,
                     ChatbotResponse.class);
 
-            // Lưu tin nhắn user vào database
-            addMessage(sessionId, "user", userMessage);
+            // Lưu tin nhắn user vào database (kèm file nếu có)
+            addMessage(sessionId, "user", userMessage, file);
 
             // Lưu phản hồi AI vào database
             if (response != null && response.isSuccess()) {
-                addMessage(sessionId, "assistant", response.getResponse());
+                addMessage(sessionId, "assistant", response.getResponse(), null);
             }
 
             return response;
@@ -250,6 +286,10 @@ public class ChatService {
         dto.setRole(message.getRole());
         dto.setContent(message.getContent());
         dto.setCreatedAt(message.getCreatedAt());
+        dto.setMessageType(message.getMessageType());
+        dto.setFileUrl(message.getFileUrl());
+        dto.setFileName(message.getFileName());
+        dto.setFileSize(message.getFileSize());
         return dto;
     }
 }
