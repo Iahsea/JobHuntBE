@@ -1,18 +1,30 @@
 package vn.hoidanit.jobhunter.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.extern.slf4j.Slf4j;
 import vn.hoidanit.jobhunter.domain.ChatMessage;
 import vn.hoidanit.jobhunter.domain.ChatSession;
 import vn.hoidanit.jobhunter.domain.User;
 import vn.hoidanit.jobhunter.domain.request.ChatbotRequest;
+import vn.hoidanit.jobhunter.domain.request.MyCvRequest;
 import vn.hoidanit.jobhunter.domain.response.ChatbotResponse;
 import vn.hoidanit.jobhunter.domain.response.chat.ResChatMessageDTO;
 import vn.hoidanit.jobhunter.domain.response.chat.ResChatSessionDTO;
@@ -21,12 +33,15 @@ import vn.hoidanit.jobhunter.repository.ChatSessionRepository;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
 
 @Service
+@Slf4j
 public class ChatService {
 
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserService userService;
     private final RestTemplate restTemplate;
+    private final FileService fileService;
+    private final MyCvService myCvService;
 
     @Value("${chatbot.python.api.url:http://localhost:8000}")
     private String pythonApiUrl;
@@ -35,11 +50,15 @@ public class ChatService {
             ChatSessionRepository chatSessionRepository,
             ChatMessageRepository chatMessageRepository,
             UserService userService,
-            RestTemplate restTemplate) {
+            RestTemplate restTemplate,
+            FileService fileService,
+            MyCvService myCvService) {
         this.chatSessionRepository = chatSessionRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.userService = userService;
         this.restTemplate = restTemplate;
+        this.fileService = fileService;
+        this.myCvService = myCvService;
     }
 
     /**
@@ -86,8 +105,10 @@ public class ChatService {
     /**
      * Gửi tin nhắn tới Python AI và nhận phản hồi
      * Lưu cả tin nhắn user và phản hồi AI vào database
+     * Hỗ trợ upload file PDF để AI phân tích CV
      */
-    public ChatbotResponse sendMessageToAI(long sessionId, String userMessage) throws IdInvalidException {
+    public ChatbotResponse sendMessageToAI(long sessionId, String userMessage, MultipartFile file)
+            throws IdInvalidException {
         Optional<ChatSession> sessionOptional = this.chatSessionRepository.findById(sessionId);
         if (!sessionOptional.isPresent()) {
             throw new IdInvalidException("Chat session không tồn tại");
@@ -101,10 +122,6 @@ public class ChatService {
         int startIndex = Math.max(0, history.size() - 20);
         history = history.subList(startIndex, history.size());
 
-        // Chuẩn bị request cho Python API
-        ChatbotRequest request = new ChatbotRequest();
-        request.setMessage(userMessage);
-
         // Convert lịch sử sang format Python API yêu cầu
         List<ChatbotRequest.ConversationHistory> conversationHistory = new ArrayList<>();
         for (ChatMessage msg : history) {
@@ -113,13 +130,39 @@ public class ChatService {
             historyItem.setContent(msg.getContent());
             conversationHistory.add(historyItem);
         }
-        request.setConversationHistory(conversationHistory);
 
-        // Gọi Python API
+        // Gọi Python API với multipart request
         try {
+            // Chuẩn bị multipart request
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("message", userMessage);
+
+            // Convert conversation history sang JSON string
+            ObjectMapper objectMapper = new ObjectMapper();
+            String historyJson = objectMapper.writeValueAsString(conversationHistory);
+            body.add("conversation_history", historyJson);
+
+            // Thêm file nếu có
+            if (file != null && !file.isEmpty()) {
+                ByteArrayResource fileResource = new ByteArrayResource(file.getBytes()) {
+                    @Override
+                    public String getFilename() {
+                        return file.getOriginalFilename();
+                    }
+                };
+                body.add("file", fileResource);
+            }
+
+            // Set headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+            // Gửi request
             ChatbotResponse response = restTemplate.postForObject(
                     pythonApiUrl + "/api/chat",
-                    request,
+                    requestEntity,
                     ChatbotResponse.class);
 
             // Lưu tin nhắn user vào database
