@@ -57,9 +57,14 @@ public class Company {
     private String createdBy;
     private String updatedBy;
 
-    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
+//    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
+//    @JsonIgnore
+//    private List<User> users;
+
+    @OneToOne
     @JsonIgnore
-    private List<User> users;
+    @JoinColumn(name = "hr_id")
+    private User hr;
 
     @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
     @JsonIgnore

@@ -1,20 +1,24 @@
 package vn.hoidanit.jobhunter.service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import org.springframework.transaction.annotation.Transactional;
 import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.Job;
 import vn.hoidanit.jobhunter.domain.Skill;
 import vn.hoidanit.jobhunter.domain.User;
+import vn.hoidanit.jobhunter.domain.request.JobVectorRequest;
 import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
 import vn.hoidanit.jobhunter.domain.response.job.JobSummaryResponse;
 import vn.hoidanit.jobhunter.domain.response.job.ResCreateJobDTO;
@@ -40,11 +44,25 @@ public class JobService {
                       SkillRepository skillRepository,
                       CompanyRepository companyRepository,
                       UserService userService, AccessService accessService) {
+    private final RestTemplate restTemplate;
+
+    @Value("${chatbot.python.api.url:http://localhost:8000}")
+    private String pythonApiUrl;
+    private final JobNotificationService jobNotificationService;
+
+    public JobService(JobRepository jobRepository,
+            SkillRepository skillRepository,
+            CompanyRepository companyRepository,
+            UserService userService,
+            RestTemplate restTemplate,
+            JobNotificationService jobNotificationService) {
         this.jobRepository = jobRepository;
         this.skillRepository = skillRepository;
         this.companyRepository = companyRepository;
         this.userService = userService;
         this.accessService = accessService;
+        this.restTemplate = restTemplate;
+        this.jobNotificationService = jobNotificationService;
     }
 
     public Optional<Job> fetchJobById(long id) {
@@ -77,6 +95,16 @@ public class JobService {
 
         // create job
         Job currentJob = this.jobRepository.save(j);
+
+        // Gửi job data sang Python API để thêm vào vector DB
+        try {
+            sendJobToVectorDB(currentJob);
+        } catch (Exception e) {
+            // Log lỗi nhưng không làm gián đoạn việc tạo job
+            System.err.println("Lỗi khi gửi job sang Python API: " + e.getMessage());
+        }
+        // Gửi thông báo cho users có skills phù hợp
+        jobNotificationService.notifyNewJob(currentJob);
 
         // convert response
         ResCreateJobDTO dto = new ResCreateJobDTO();
@@ -141,6 +169,14 @@ public class JobService {
         // update job
         Job currentJob = this.jobRepository.save(jobInDB);
 
+        // Gửi job data sang Python API để cập nhật trong vector DB
+        try {
+            sendJobToVectorDB(currentJob);
+        } catch (Exception e) {
+            // Log lỗi nhưng không làm gián đoạn việc update job
+            System.err.println("Lỗi khi gửi job sang Python API: " + e.getMessage());
+        }
+
         // convert response
         ResUpdateJobDTO dto = new ResUpdateJobDTO();
         dto.setId(currentJob.getId());
@@ -160,7 +196,10 @@ public class JobService {
         dto.setYearsOfExperience(currentJob.getYearsOfExperience());
 
         if (currentJob.getSkills() != null) {
-            dto.setSkills(currentJob.getSkills());
+            List<String> skills = currentJob.getSkills()
+                    .stream().map(item -> item.getName())
+                    .collect(Collectors.toList());
+            dto.setSkills(skills);
         }
 
         return dto;
@@ -229,6 +268,45 @@ public class JobService {
 
         rs.setResult(jobSummaryResponses);
         return rs;
+    }
+
+    /**
+     * Gửi thông tin job sang Python API để thêm vào vector DB
+     */
+    private void sendJobToVectorDB(Job job) {
+        JobVectorRequest request = new JobVectorRequest();
+
+        // Map dữ liệu từ Job entity sang JobVectorRequest
+        request.setJobId(String.valueOf(job.getId()));
+        request.setName(job.getName());
+        request.setDescription(job.getDescription() != null ? job.getDescription() : "");
+        request.setLocation(job.getLocation());
+        request.setSalary(String.valueOf(job.getSalary()));
+        request.setLevel(job.getLevel() != null ? job.getLevel().toString() : "");
+        request.setJobType(job.getJobType() != null ? job.getJobType().toString() : "");
+        request.setYearsOfExperience(
+                job.getYearsOfExperience() != null ? String.valueOf(job.getYearsOfExperience()) : "");
+
+        // Format dates to string
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
+        request.setStartDate(job.getStartDate() != null ? formatter.format(job.getStartDate()) : "");
+        request.setEndDate(job.getEndDate() != null ? formatter.format(job.getEndDate()) : "");
+
+        // Convert workModes list to string
+        if (job.getWorkModes() != null && !job.getWorkModes().isEmpty()) {
+            String workModes = job.getWorkModes().stream()
+                    .map(Enum::toString)
+                    .collect(Collectors.joining(", "));
+            request.setWorkMode(workModes);
+        } else {
+            request.setWorkMode("");
+        }
+
+        // Gọi Python API
+        restTemplate.postForObject(
+                pythonApiUrl + "/api/vector/add-job",
+                request,
+                Object.class);
     }
 
 }

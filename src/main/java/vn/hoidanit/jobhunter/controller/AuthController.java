@@ -87,10 +87,8 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        //  Lấy user từ DB
-        User currentUserDB = userService.handleGetUserByUsername(loginDto.getUsername());
-
         //  Build UserLogin (NULL-SAFE company)
+        User currentUserDB = this.userService.handleGetUserByUsername(loginDto.getUsername());
         ResLoginDTO.UserLogin userLogin = null;
         if (currentUserDB != null) {
             Long companyId = currentUserDB.getCompany() != null
@@ -102,7 +100,7 @@ public class AuthController {
                     .email(currentUserDB.getEmail())
                     .name(currentUserDB.getName())
                     .role(currentUserDB.getRole())
-                    .companyId( companyId) //  null-safe
+                    .companyId(companyId) //  null-safe
                     .avatar(currentUserDB.getAvatar())
                     .phoneNumber(currentUserDB.getPhoneNumber())
                     .dateOfBirth(currentUserDB.getDateOfBirth())
@@ -112,7 +110,7 @@ public class AuthController {
                     .build();
         }
 
-        // 4) Build response
+        // Build response
         ResLoginDTO res = ResLoginDTO.builder()
                 .user(userLogin)
                 .build();
@@ -184,18 +182,23 @@ public class AuthController {
         ResLoginDTO res = new ResLoginDTO();
         User currentUserDB = this.userService.handleGetUserByUsername(email);
         if (currentUserDB != null) {
-            ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
-                    currentUserDB.getId(),
-                    currentUserDB.getEmail(),
-                    currentUserDB.getName(),
-                    currentUserDB.getRole(),
-                    currentUserDB.getCompany().getId(),
-                    currentUserDB.getAvatar(),
-                    currentUserDB.getPhoneNumber(),
-                    currentUserDB.getDateOfBirth(),
-                    currentUserDB.getGender(),
-                    currentUserDB.isGoogleAccount(),
-                    currentUserDB.getFavoriteJobIds());
+            Long companyId = currentUserDB.getCompany() != null
+                    ? currentUserDB.getCompany().getId()
+                    : null;
+
+            ResLoginDTO.UserLogin userLogin = ResLoginDTO.UserLogin.builder()
+                    .id(currentUserDB.getId())
+                    .email(currentUserDB.getEmail())
+                    .name(currentUserDB.getName())
+                    .role(currentUserDB.getRole())
+                    .companyId(companyId)
+                    .avatar(currentUserDB.getAvatar())
+                    .phoneNumber(currentUserDB.getPhoneNumber())
+                    .dateOfBirth(currentUserDB.getDateOfBirth())
+                    .gender(currentUserDB.getGender())
+                    .isUserGoogleAccount(currentUserDB.isGoogleAccount())
+                    .favoriteJobIds(currentUserDB.getFavoriteJobIds())
+                    .build();
             res.setUser(userLogin);
         }
 
