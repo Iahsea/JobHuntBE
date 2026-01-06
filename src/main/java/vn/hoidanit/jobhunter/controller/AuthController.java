@@ -102,7 +102,7 @@ public class AuthController {
                     .email(currentUserDB.getEmail())
                     .name(currentUserDB.getName())
                     .role(currentUserDB.getRole())
-                    .companyId(currentUserDB.getCompany().getId()) //  null-safe
+                    .companyId( companyId) //  null-safe
                     .avatar(currentUserDB.getAvatar())
                     .phoneNumber(currentUserDB.getPhoneNumber())
                     .dateOfBirth(currentUserDB.getDateOfBirth())

@@ -4,11 +4,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import vn.hoidanit.jobhunter.domain.Company;
 import vn.hoidanit.jobhunter.domain.Job;
 import vn.hoidanit.jobhunter.domain.Skill;
@@ -22,29 +24,34 @@ import vn.hoidanit.jobhunter.repository.JobRepository;
 import vn.hoidanit.jobhunter.repository.SkillRepository;
 import vn.hoidanit.jobhunter.util.SecurityUtil;
 import vn.hoidanit.jobhunter.service.UserService;
+import vn.hoidanit.jobhunter.util.constant.AccessAction;
 
 @Service
+@Slf4j
 public class JobService {
 
     private final JobRepository jobRepository;
     private final SkillRepository skillRepository;
     private final CompanyRepository companyRepository;
     private final UserService userService;
+    private final AccessService accessService;
 
     public JobService(JobRepository jobRepository,
-            SkillRepository skillRepository,
-            CompanyRepository companyRepository,
-            UserService userService) {
+                      SkillRepository skillRepository,
+                      CompanyRepository companyRepository,
+                      UserService userService, AccessService accessService) {
         this.jobRepository = jobRepository;
         this.skillRepository = skillRepository;
         this.companyRepository = companyRepository;
         this.userService = userService;
+        this.accessService = accessService;
     }
 
     public Optional<Job> fetchJobById(long id) {
         return this.jobRepository.findById(id);
     }
 
+    @Transactional
     public ResCreateJobDTO create(Job j) {
         // check skills
         if (j.getSkills() != null) {
@@ -63,6 +70,10 @@ public class JobService {
                 j.setCompany(cOptional.get());
             }
         }
+
+        // Check minus quota CREATE_JOB
+        accessService.consumeOrThrow(AccessAction.CREATE_JOB);
+        log.info(" minus quota CREATE_JOB successfully");
 
         // create job
         Job currentJob = this.jobRepository.save(j);

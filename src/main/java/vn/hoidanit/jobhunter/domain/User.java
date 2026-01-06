@@ -106,6 +106,11 @@ public class User {
     @JsonIgnore
     private UserProfile profile;
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Subscription> subscriptions;
+
+
     @PrePersist
     public void handleBeforeCreate() {
         this.createdBy = SecurityUtil.getCurrentUserLogin().isPresent() == true
