@@ -39,23 +39,21 @@ public class JobService {
     private final CompanyRepository companyRepository;
     private final UserService userService;
     private final AccessService accessService;
-
-    public JobService(JobRepository jobRepository,
-                      SkillRepository skillRepository,
-                      CompanyRepository companyRepository,
-                      UserService userService, AccessService accessService) {
     private final RestTemplate restTemplate;
 
     @Value("${chatbot.python.api.url:http://localhost:8000}")
     private String pythonApiUrl;
     private final JobNotificationService jobNotificationService;
 
-    public JobService(JobRepository jobRepository,
+    public JobService(
+            JobRepository jobRepository,
             SkillRepository skillRepository,
             CompanyRepository companyRepository,
             UserService userService,
             RestTemplate restTemplate,
-            JobNotificationService jobNotificationService) {
+            JobNotificationService jobNotificationService,
+            AccessService accessService
+    ) {
         this.jobRepository = jobRepository;
         this.skillRepository = skillRepository;
         this.companyRepository = companyRepository;
