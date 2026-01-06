@@ -94,7 +94,8 @@ public class JobNotificationService {
                 for (WebSocketSession session : sessions) {
                     if (session.getUserId().equals(userId)) {
                         try {
-                            var client = socketIOServer.getClient(java.util.UUID.fromString(session.getSocketSessionId()));
+                            var client = socketIOServer
+                                    .getClient(java.util.UUID.fromString(session.getSocketSessionId()));
                             if (client != null) {
                                 client.sendEvent("newJobNotification", notificationDTO);
                                 notificationsSent++;
@@ -121,13 +122,13 @@ public class JobNotificationService {
      * Xây dựng DTO thông báo từ Job entity
      */
     private JobNotificationDTO buildJobNotification(Job job) {
-        List<String> skillNames = job.getSkills() != null ?
-                job.getSkills().stream()
-                        .map(Skill::getName)
-                        .collect(Collectors.toList()) :
-                List.of();
+        List<String> skillNames = job.getSkills() != null ? job.getSkills().stream()
+                .map(Skill::getName)
+                .collect(Collectors.toList()) : List.of();
 
-//        Company company = this.companyService.findById(job.getCompany().getId()).isPresent() ? this.companyService.findById(job.getCompany().getId()).get() : null;
+        // Company company =
+        // this.companyService.findById(job.getCompany().getId()).isPresent() ?
+        // this.companyService.findById(job.getCompany().getId()).get() : null;
 
         String companyName = job.getCompany() != null ? job.getCompany().getName() : "Unknown Company";
         String companyLogo = job.getCompany() != null ? job.getCompany().getLogo() : null;
@@ -271,4 +272,3 @@ public class JobNotificationService {
         return result;
     }
 }
-
