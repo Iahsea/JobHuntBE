@@ -100,7 +100,7 @@ public class AuthController {
                     .email(currentUserDB.getEmail())
                     .name(currentUserDB.getName())
                     .role(currentUserDB.getRole())
-                    .companyId(companyId)
+                    .companyId(companyId) //  null-safe
                     .avatar(currentUserDB.getAvatar())
                     .phoneNumber(currentUserDB.getPhoneNumber())
                     .dateOfBirth(currentUserDB.getDateOfBirth())
@@ -186,18 +186,19 @@ public class AuthController {
                     ? currentUserDB.getCompany().getId()
                     : null;
 
-            ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
-                    currentUserDB.getId(),
-                    currentUserDB.getEmail(),
-                    currentUserDB.getName(),
-                    currentUserDB.getRole(),
-                    companyId,
-                    currentUserDB.getAvatar(),
-                    currentUserDB.getPhoneNumber(),
-                    currentUserDB.getDateOfBirth(),
-                    currentUserDB.getGender(),
-                    currentUserDB.isGoogleAccount(),
-                    currentUserDB.getFavoriteJobIds());
+            ResLoginDTO.UserLogin userLogin = ResLoginDTO.UserLogin.builder()
+                    .id(currentUserDB.getId())
+                    .email(currentUserDB.getEmail())
+                    .name(currentUserDB.getName())
+                    .role(currentUserDB.getRole())
+                    .companyId(companyId)
+                    .avatar(currentUserDB.getAvatar())
+                    .phoneNumber(currentUserDB.getPhoneNumber())
+                    .dateOfBirth(currentUserDB.getDateOfBirth())
+                    .gender(currentUserDB.getGender())
+                    .isUserGoogleAccount(currentUserDB.isGoogleAccount())
+                    .favoriteJobIds(currentUserDB.getFavoriteJobIds())
+                    .build();
             res.setUser(userLogin);
         }
 

@@ -20,4 +20,7 @@ public interface ConversationRepository extends JpaRepository<Conversation, Stri
         where p.userId = :userId
     """)
     List<Conversation> findAllByParticipantIdsContains(@Param("userId") Long userId);
+
+    @Query("select c from Conversation c left join fetch c.participants where c.id = :id")
+    Optional<Conversation> findByIdWithParticipants(@Param("id") Long id);
 }

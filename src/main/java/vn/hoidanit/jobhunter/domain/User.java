@@ -81,6 +81,8 @@ public class User {
     @Column(name = "job_id")
     private List<Long> favoriteJobIds;
 
+    private Instant lastSeen;
+
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;
@@ -105,6 +107,11 @@ public class User {
     @OneToOne(mappedBy = "user")
     @JsonIgnore
     private UserProfile profile;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Subscription> subscriptions;
+
 
     @PrePersist
     public void handleBeforeCreate() {

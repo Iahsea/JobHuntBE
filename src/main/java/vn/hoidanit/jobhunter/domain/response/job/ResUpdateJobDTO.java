@@ -33,8 +33,8 @@ public class ResUpdateJobDTO {
     private Instant startDate;
     private Instant endDate;
     private boolean isActive;
-
-    private List<Skill> skills;
+    private List<String> skills;
+//    private List<Skill> skills;
 
     private Instant updatedAt;
     private String updatedBy;

@@ -25,6 +25,7 @@ public class JobSummaryResponse {
     private Integer yearsOfExperience;
     private Instant startDate;
     private Instant endDate;
+    private List<String> skills;
     private String imageUrl;
-    private List<Skill> skills;
+//    private List<Skill> skills;
 }
