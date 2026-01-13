@@ -20,7 +20,7 @@ public class JobSummaryResponse {
     private int quantity;
     private JobTypeEnum jobType;
     private LevelEnum level;
-    private List<WorkModeEnum> workModes;
+    private WorkModeEnum workModes;
     private boolean active;
     private Integer yearsOfExperience;
     private Instant startDate;

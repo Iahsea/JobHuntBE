@@ -112,7 +112,7 @@ public class JobService {
         dto.setQuantity(currentJob.getQuantity());
         dto.setLocation(currentJob.getLocation());
         dto.setLevel(currentJob.getLevel());
-        dto.setWorkModes(currentJob.getWorkModes());
+        dto.setWorkModes(currentJob.getWorkMode());
         dto.setYearsOfExperience(currentJob.getYearsOfExperience());
         dto.setStartDate(currentJob.getStartDate());
         dto.setEndDate(currentJob.getEndDate());
@@ -162,7 +162,7 @@ public class JobService {
         jobInDB.setStartDate(j.getStartDate());
         jobInDB.setEndDate(j.getEndDate());
         jobInDB.setActive(j.isActive());
-        jobInDB.setWorkModes(j.getWorkModes());
+        jobInDB.setWorkMode(j.getWorkMode());
 
         // update job
         Job currentJob = this.jobRepository.save(jobInDB);
@@ -190,7 +190,7 @@ public class JobService {
         dto.setUpdatedBy(currentJob.getUpdatedBy());
         dto.setDescription(currentJob.getDescription());
         dto.setJobType(currentJob.getJobType());
-        dto.setWorkModes(currentJob.getWorkModes());
+        dto.setWorkModes(currentJob.getWorkMode());
         dto.setYearsOfExperience(currentJob.getYearsOfExperience());
 
         if (currentJob.getSkills() != null) {
@@ -248,7 +248,7 @@ public class JobService {
             jsr.setStartDate(job.getStartDate());
             jsr.setEndDate(job.getEndDate());
             jsr.setActive(job.isActive());
-            jsr.setWorkModes(job.getWorkModes());
+            jsr.setWorkModes(job.getWorkMode());
             jsr.setImageUrl(
                     job.getCompany() != null ? job.getCompany().getLogo() : null);
             return jsr;
@@ -282,6 +282,7 @@ public class JobService {
         request.setSalary(String.valueOf(job.getSalary()));
         request.setLevel(job.getLevel() != null ? job.getLevel().toString() : "");
         request.setJobType(job.getJobType() != null ? job.getJobType().toString() : "");
+        request.setWorkMode(job.getWorkMode() != null ? job.getWorkMode().toString() : "");
         request.setYearsOfExperience(
                 job.getYearsOfExperience() != null ? String.valueOf(job.getYearsOfExperience()) : "");
 
@@ -290,15 +291,15 @@ public class JobService {
         request.setStartDate(job.getStartDate() != null ? formatter.format(job.getStartDate()) : "");
         request.setEndDate(job.getEndDate() != null ? formatter.format(job.getEndDate()) : "");
 
-        // Convert workModes list to string
-        if (job.getWorkModes() != null && !job.getWorkModes().isEmpty()) {
-            String workModes = job.getWorkModes().stream()
-                    .map(Enum::toString)
-                    .collect(Collectors.joining(", "));
-            request.setWorkMode(workModes);
-        } else {
-            request.setWorkMode("");
-        }
+//        // Convert workModes list to string
+//        if (job.getWorkModes() != null && !job.getWorkModes().isEmpty()) {
+//            String workModes = job.getWorkModes().stream()
+//                    .map(Enum::toString)
+//                    .collect(Collectors.joining(", "));
+//            request.setWorkMode(workModes);
+//        } else {
+//            request.setWorkMode("");
+//        }
 
         // Gọi Python API
         restTemplate.postForObject(
