@@ -1,18 +1,14 @@
 package vn.hoidanit.jobhunter.controller;
 
+import java.util.List;
 import java.util.Optional;
+
+import jakarta.persistence.criteria.Join;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
 import vn.hoidanit.jobhunter.domain.Job;
@@ -20,7 +16,9 @@ import vn.hoidanit.jobhunter.domain.response.ResultPaginationDTO;
 import vn.hoidanit.jobhunter.domain.response.job.ResCreateJobDTO;
 import vn.hoidanit.jobhunter.domain.response.job.ResUpdateJobDTO;
 import vn.hoidanit.jobhunter.service.JobService;
+import vn.hoidanit.jobhunter.specification.JobSpecification;
 import vn.hoidanit.jobhunter.util.annotation.ApiMessage;
+import vn.hoidanit.jobhunter.util.constant.WorkModeEnum;
 import vn.hoidanit.jobhunter.util.error.IdInvalidException;
 
 @RestController
@@ -78,10 +76,23 @@ public class JobController {
     @ApiMessage("Get job with pagination")
     public ResponseEntity<ResultPaginationDTO> getAllJob(
             @Filter Specification<Job> spec,
+            @RequestParam(required = false) List<String> skills,
             Pageable pageable) {
+
+        if (skills != null && !skills.isEmpty()) {
+            spec = spec.and(JobSpecification.hasAnySkillNames(skills));
+        }
 
         return ResponseEntity.ok().body(this.jobService.fetchAll(spec, pageable));
     }
+
+    public static Specification<Job> hasWorkMode(WorkModeEnum mode) {
+        return (root, query, cb) -> {
+            Join<Job, WorkModeEnum> join = root.join("workModes");
+            return cb.equal(join, mode);
+        };
+    }
+
 
     @GetMapping("/jobs/company/{id}")
     @ApiMessage("Get job by company id with pagination")

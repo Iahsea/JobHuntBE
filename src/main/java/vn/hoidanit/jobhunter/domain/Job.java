@@ -47,10 +47,8 @@ public class Job {
     private JobTypeEnum jobType;
 
     // hinh thuc lam viec: onsite, hybrid, remote
-    @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
-    @Column(name = "work_mode")
-    private List<WorkModeEnum> workModes;
+    private WorkModeEnum workMode;
 
     // so nam kinh nghiem yeu cau
     private Integer yearsOfExperience;

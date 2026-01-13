@@ -149,7 +149,7 @@ public class CompanyService {
                     j.setQuantity(job.getQuantity());
                     j.setLevel(job.getLevel());
                     j.setActive(job.isActive());
-                    j.setWorkModes(job.getWorkModes());
+                    j.setWorkModes(job.getWorkMode());
                     j.setJobType(job.getJobType());
                     j.setYearsOfExperience(job.getYearsOfExperience());
                     j.setStartDate(job.getStartDate());
