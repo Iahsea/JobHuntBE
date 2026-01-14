@@ -194,4 +194,12 @@ public class SubscriptionService {
         return subRepo.save(s);
     }
 
+    public Subscription findActiveSubscription(Long userId) {
+        return subRepo
+                .findFirstByUser_IdAndStatusOrderByEndAtDesc(userId, "ACTIVE")
+                .filter(s -> s.getEndAt() == null || s.getEndAt().isAfter(LocalDateTime.now()))
+                .orElse(null);
+    }
+
+
 }

@@ -1,5 +1,6 @@
 package vn.hoidanit.jobhunter.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.hoidanit.jobhunter.domain.*;
@@ -9,7 +10,9 @@ import vn.hoidanit.jobhunter.util.constant.AccessAction;
 import vn.hoidanit.jobhunter.domain.response.access.AccessResponse;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+@Slf4j
 @Service
 public class AccessService {
 
@@ -45,7 +48,7 @@ public class AccessService {
         if (sub == null) {
             return AccessResponse.builder()
                     .status("NO_SUBSCRIPTION")
-                    .redirect(rolePricingRedirect(user))
+                    .redirect(rolePricingRedirect(user, "NO_SUBSCRIPTION"))
                     .build();
         }
 
@@ -83,7 +86,7 @@ public class AccessService {
                 .status(remaining > 0 ? "OK" : "QUOTA_EXCEEDED")
                 .planCode(sub.getPlan().getCode())
                 .remaining(remaining)
-                .redirect(remaining > 0 ? null : rolePricingRedirect(user))
+                .redirect(remaining > 0 ? null : rolePricingRedirect(user, "QUOTA_EXCEEDED"))
                 .build();
     }
 
@@ -155,15 +158,34 @@ public class AccessService {
 
         return switch (action) {
             case CREATE_JOB -> isHR;
-            case APPLY_JOB, UPLOAD_CV -> isUSER;
+            case APPLY_JOB, CHAT_AI -> isUSER;
         };
     }
 
 
-    private String rolePricingRedirect(User user) {
+    private String rolePricingRedirect(User user, String status) {
         String roleName = user.getRole() != null ? user.getRole().getName() : "";
-        return "/admin/pricing";
+        roleName = roleName.trim().toUpperCase();
+
+        // Chỉ redirect pricing khi QUOTA_EXCEEDED hoặc NO_SUBSCRIPTION
+        if (!"QUOTA_EXCEEDED".equals(status) && !"NO_SUBSCRIPTION".equals(status)) {
+            return null;
+        }
+
+        // USER*, USER_VIP
+        if (roleName.startsWith("USER")) {
+            return "/pricing";
+        }
+
+        // HR*, HR_VIP, ADMIN
+        if (roleName.startsWith("HR") || roleName.startsWith("ADMIN")) {
+            return "/admin/pricing";
+        }
+
+        // fallback
+        return "/pricing";
     }
+
 
     // Kỳ tháng kiểu "rolling" (theo thời điểm bắt đầu hiện tại)
     private Period ensurePeriod(Subscription sub, LocalDateTime now) {
