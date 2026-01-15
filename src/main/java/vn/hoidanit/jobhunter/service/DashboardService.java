@@ -9,12 +9,9 @@ import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import vn.hoidanit.jobhunter.domain.ChatRealtimeMessage;
 import vn.hoidanit.jobhunter.domain.response.DashboardStatisticsResponse;
-import vn.hoidanit.jobhunter.repository.ChatMessageRepository;
-import vn.hoidanit.jobhunter.repository.CompanyRepository;
-import vn.hoidanit.jobhunter.repository.JobRepository;
-import vn.hoidanit.jobhunter.repository.ResumeRepository;
-import vn.hoidanit.jobhunter.repository.UserRepository;
+import vn.hoidanit.jobhunter.repository.*;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +22,7 @@ public class DashboardService {
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
     private final ResumeRepository resumeRepository;
+    private final ChatRealtimeMessageRepository chatRealtimeMessageRepository;
     private final ChatMessageRepository chatMessageRepository;
 
     public DashboardStatisticsResponse getStatistics() {
@@ -45,11 +43,11 @@ public class DashboardService {
         long scheduleToday = resumeRepository.countByCreatedAtBetween(startOfDay, endOfDay);
 
         // Tính số tin nhắn nhận được hôm nay
-        long messagesReceived = chatMessageRepository.countByCreatedAtBetween(startOfDay, endOfDay);
+        long messagesReceived = chatRealtimeMessageRepository.countByCreatedDateBetween(startOfDay, endOfDay);
 
         // Tính tổng số lượt xem công việc (giả sử dựa vào tổng số jobs * quantity)
         // Trong thực tế, bạn nên có bảng job_views riêng để track
-        long jobViews = 2342; // Giá trị mặc định
+        long jobViews = chatMessageRepository.countByCreatedAtBetween(startOfDay, endOfDay);
         long jobApplied = resumeRepository.count();
 
         // Tính trend - so sánh với tuần trước (giả định)
