@@ -160,4 +160,14 @@ public class ResumeController {
         log.info("Fetch resumes for user: {}", user.getEmail());
         return ResponseEntity.ok().body(this.resumeService.fetchAllResumeByUserId(user.getId(), pageable));
     }
+
+    @GetMapping("/resumes/jobs/{id}")
+    @ApiMessage("Get list of resumes by job")
+    public ResponseEntity<ResultPaginationDTO> fetchAllResumeByJob(
+            @PathVariable("id") Long id,
+            Pageable pageable) throws IdInvalidException {
+
+        return ResponseEntity.ok().body(this.resumeService.fetchAllResumeByJobId(id, pageable));
+    }
+
 }

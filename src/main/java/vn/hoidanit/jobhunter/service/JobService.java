@@ -112,7 +112,7 @@ public class JobService {
         dto.setQuantity(currentJob.getQuantity());
         dto.setLocation(currentJob.getLocation());
         dto.setLevel(currentJob.getLevel());
-        dto.setWorkModes(currentJob.getWorkMode());
+        dto.setWorkMode(currentJob.getWorkMode());
         dto.setYearsOfExperience(currentJob.getYearsOfExperience());
         dto.setStartDate(currentJob.getStartDate());
         dto.setEndDate(currentJob.getEndDate());

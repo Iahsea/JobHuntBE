@@ -22,7 +22,7 @@ public class ResCreateJobDTO {
 
     private LevelEnum level;
     private Integer yearsOfExperience;
-    private WorkModeEnum workModes;
+    private WorkModeEnum workMode;
 
     private Instant startDate;
     private Instant endDate;

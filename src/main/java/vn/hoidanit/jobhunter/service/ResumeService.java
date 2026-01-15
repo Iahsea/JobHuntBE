@@ -224,4 +224,27 @@ public class ResumeService {
 
         return rs;
     }
+
+    public ResultPaginationDTO fetchAllResumeByJobId(Long jobId, Pageable pageable) {
+        Page<Resume> pageResume = this.resumeRepository.findByJobId(jobId, pageable);
+
+        ResultPaginationDTO rs = new ResultPaginationDTO();
+        ResultPaginationDTO.Meta mt = new ResultPaginationDTO.Meta();
+
+        mt.setPage(pageable.getPageNumber() + 1);
+        mt.setPageSize(pageable.getPageSize());
+        mt.setPages(pageResume.getTotalPages());
+        mt.setTotal(pageResume.getTotalElements());
+
+        rs.setMeta(mt);
+
+        List<ResFetchResumeDTO> listResume = pageResume.getContent()
+                .stream().map(item -> this.getResume(item))
+                .collect(Collectors.toList());
+
+        rs.setResult(listResume);
+
+        return rs;
+    }
+
 }

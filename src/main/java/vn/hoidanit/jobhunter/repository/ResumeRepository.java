@@ -18,4 +18,7 @@ public interface ResumeRepository extends JpaRepository<Resume, Long>,
 
         boolean existsByUserIdAndJobId(Long userId, Long jobId);
 
+        Page<Resume> findByJobId(Long jobId, Pageable pageable);
+
+
 }
