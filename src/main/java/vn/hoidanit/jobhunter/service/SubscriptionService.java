@@ -101,52 +101,67 @@ public class SubscriptionService {
         Subscription s = subRepo.findById(subscriptionId)
                 .orElseThrow(() -> new RuntimeException("SUB_NOT_FOUND"));
 
-        // idempotent – webhook gọi nhiều lần vẫn an toàn
+        // Idempotent
         if ("ACTIVE".equalsIgnoreCase(s.getStatus())) {
             return s;
         }
 
-        Plan p = s.getPlan();
+        Long userId = s.getUser().getId();
         LocalDateTime now = LocalDateTime.now();
+        Plan p = s.getPlan();
 
+        // 1) Tìm subscription ACTIVE cũ (nếu có và khác subscription đang kích hoạt)
+        Subscription oldActive = subRepo.findActiveByUserId(userId)
+                .filter(active -> !active.getId().equals(s.getId()))
+                .orElse(null);
+
+        // 2) Activate subscription mới trước
         s.setStatus("ACTIVE");
         s.setStartAt(now);
         s.setEndAt(now.plusMonths(p.getDurationMonths()));
-
         s.setCurrentPeriodStart(now);
         s.setCurrentPeriodEnd(now.plusMonths(1));
 
         Subscription saved = subRepo.save(s);
 
-        // Nếu bạn có SubscriptionUsage
-        // initMonthlyUsage(saved);
+        // 3) Đóng subscription cũ => EXPIRED (KHÔNG delete)
+        if (oldActive != null) {
+            oldActive.setStatus("EXPIRED");
+            oldActive.setEndAt(now);
+
+            // nếu muốn rõ ràng chu kỳ cũng kết thúc tại đây
+            oldActive.setCurrentPeriodEnd(now);
+
+            // (Optional) nếu bạn muốn giữ startAt cũ thì không đụng startAt
+            subRepo.save(oldActive);
+        }
 
         return saved;
     }
 
 
 
+
+
     @Transactional
     public Subscription createPendingSubscription(Long userId, Long planId) {
-        if (userId == null)
-            throw new RuntimeException("USER_ID_REQUIRED");
-        if (planId == null)
-            throw new RuntimeException("PLAN_ID_REQUIRED");
+        if (userId == null) throw new RuntimeException("USER_ID_REQUIRED");
+        if (planId == null) throw new RuntimeException("PLAN_ID_REQUIRED");
 
         User u = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         Plan p = planRepo.findById(planId).orElseThrow(() -> new RuntimeException("PLAN_NOT_FOUND"));
 
-        // CHECK: Đã có subscription active chưa
-        Optional<Subscription> existingActive = subRepo.findActiveByUserId(userId);
-        if (existingActive.isPresent()) {
-            throw new RuntimeException("USER_ALREADY_HAS_ACTIVE_SUBSCRIPTION");
-        }
+        //  KHÔNG CHẶN active nữa — vì bạn sẽ replace khi webhook SUCCESS
 
-        // CHECK: Có PENDING_PAYMENT chưa thanh toán không
-//        List<Subscription> pending = subRepo.findByUserIdAndStatus(userId, "PENDING_PAYMENT");
-//        if (!pending.isEmpty()) {
-//            throw new RuntimeException("USER_HAS_PENDING_PAYMENT");
-//        }
+        // Nhưng nên chặn nếu đang có pending chưa thanh toán để khỏi tạo vô hạn
+        List<Subscription> pending = subRepo.findByUserIdAndStatus(userId, "PENDING_PAYMENT");
+        if (!pending.isEmpty()) {
+            // Option 1: trả lại pending hiện có (khuyên dùng)
+            return pending.get(0);
+
+            // Option 2: hoặc throw nếu bạn muốn user phải hủy pending cũ trước
+            // throw new RuntimeException("USER_HAS_PENDING_PAYMENT");
+        }
 
         Subscription s = Subscription.builder()
                 .user(u)
@@ -156,6 +171,7 @@ public class SubscriptionService {
 
         return subRepo.save(s);
     }
+
 
     public Subscription findActiveSubscription(Long userId) {
         return subRepo
