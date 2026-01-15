@@ -22,7 +22,7 @@ public class ResUpdateJobDTO {
     private String description;
 
     private Integer yearsOfExperience;
-    private WorkModeEnum workModes;
+    private WorkModeEnum workMode;
 
     private int quantity;
 

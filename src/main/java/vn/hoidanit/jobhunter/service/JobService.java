@@ -190,7 +190,7 @@ public class JobService {
         dto.setUpdatedBy(currentJob.getUpdatedBy());
         dto.setDescription(currentJob.getDescription());
         dto.setJobType(currentJob.getJobType());
-        dto.setWorkModes(currentJob.getWorkMode());
+        dto.setWorkMode(currentJob.getWorkMode());
         dto.setYearsOfExperience(currentJob.getYearsOfExperience());
 
         if (currentJob.getSkills() != null) {
