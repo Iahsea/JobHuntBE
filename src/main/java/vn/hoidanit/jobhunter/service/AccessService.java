@@ -145,8 +145,9 @@ public class AccessService {
                 ? ""
                 : user.getRole().getName().toUpperCase();
 
-        // ADMIN làm được tất cả
-        if (role.contains("ADMIN")) {
+        // ADMIN / SUPER_ADMIN: luôn cho qua tất cả action
+        if ("ADMIN".equals(role) || "SUPER_ADMIN".equals(role)
+                || "ROLE_ADMIN".equals(role) || "ROLE_SUPER_ADMIN".equals(role)) {
             return true;
         }
 
@@ -167,10 +168,17 @@ public class AccessService {
         String roleName = user.getRole() != null ? user.getRole().getName() : "";
         roleName = roleName.trim().toUpperCase();
 
+
+        if ("ADMIN".equals(roleName) || "SUPER_ADMIN".equals(roleName)
+                || "ROLE_ADMIN".equals(roleName) || "ROLE_SUPER_ADMIN".equals(roleName)) {
+            return null;
+        }
+
         // Chỉ redirect pricing khi QUOTA_EXCEEDED hoặc NO_SUBSCRIPTION
         if (!"QUOTA_EXCEEDED".equals(status) && !"NO_SUBSCRIPTION".equals(status)) {
             return null;
         }
+
 
         // USER*, USER_VIP
         if (roleName.startsWith("USER")) {
