@@ -12,11 +12,8 @@ import vn.hoidanit.jobhunter.domain.response.SepayQrResponse;
 import vn.hoidanit.jobhunter.repository.PaymentTransactionRepository;
 import vn.hoidanit.jobhunter.util.constant.PaymentStatus;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,12 +26,14 @@ public class PaymentTransactionService {
     private final SepayQrProperties sepayQrProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final SubscriptionService subscriptionService;
+    private final UserService userService;
 
     public PaymentTransactionService(PaymentTransactionRepository paymentTransactionRepository,
-            SepayQrProperties sepayQrProperties, SubscriptionService subscriptionService) {
+                                     SepayQrProperties sepayQrProperties, SubscriptionService subscriptionService, UserService userService) {
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.sepayQrProperties = sepayQrProperties;
         this.subscriptionService = subscriptionService;
+        this.userService = userService;
     }
 
     @Transactional
@@ -192,9 +191,21 @@ public class PaymentTransactionService {
         try {
             subscriptionService.activateSubscriptionAndInitMonthlyUsage(tx.getSubscription().getId());
             log.info("Activated subscription {} successfully", tx.getSubscription().getId());
+
+            var sub = tx.getSubscription();
+            var plan = sub.getPlan();
+
+            userService.updateRoleAfterPurchase(
+                    sub.getUser().getId(),
+                    plan.getAudience(),  // USER/HR
+                    plan.getTier()       // BASIC/STANDARD
+            );
+
+            log.info("Updated role for userId={} with tier={}", sub.getUser().getId(), plan.getTier());
+
         } catch (Exception e) {
-            log.error("Failed to activate subscription {}: {}",
-                    tx.getSubscription().getId(), e.getMessage());
+            log.error("Failed post-payment processing for subscriptionId={}, txId={}: {}",
+                    tx.getSubscription().getId(), tx.getId(), e.getMessage(), e);
             throw e;
         }
 

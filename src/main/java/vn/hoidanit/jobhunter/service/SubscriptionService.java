@@ -116,10 +116,6 @@ public class SubscriptionService {
         s.setCurrentPeriodStart(now);
         s.setCurrentPeriodEnd(now.plusMonths(1));
 
-        // UPDATE USER ROLE khi mua gói
-        User user = s.getUser();
-        upgradeUserRole(user, p);
-
         Subscription saved = subRepo.save(s);
 
         // Nếu bạn có SubscriptionUsage
@@ -128,40 +124,7 @@ public class SubscriptionService {
         return saved;
     }
 
-    /**
-     * Upgrade role của user dựa vào plan đã mua
-     * HR + plan VIP -> HR_VIP
-     * USER + plan VIP -> USER_VIP
-     */
-    private void upgradeUserRole(User user, Plan plan) {
-        String audience = plan.getAudience(); // "HR" hoặc "USER"
-        String tier = plan.getTier(); // "BASIC" hoặc "VIP"
 
-        if (audience == null || tier == null) {
-            return; // không có đủ thông tin để upgrade
-        }
-
-        String newRoleName = null;
-
-        // Xác định role mới dựa vào audience và tier
-        if ("HR".equalsIgnoreCase(audience) && "VIP".equalsIgnoreCase(tier)) {
-            newRoleName = "HR_VIP";
-        } else if ("HR".equalsIgnoreCase(audience) && "BASIC".equalsIgnoreCase(tier)) {
-            newRoleName = "HR";
-        } else if ("USER".equalsIgnoreCase(audience) && "VIP".equalsIgnoreCase(tier)) {
-            newRoleName = "USER_VIP";
-        } else if ("USER".equalsIgnoreCase(audience) && "BASIC".equalsIgnoreCase(tier)) {
-            newRoleName = "USER";
-        }
-
-        if (newRoleName != null) {
-            Role newRole = roleRepo.findByName(newRoleName);
-            if (newRole != null) {
-                user.setRole(newRole);
-                userRepo.save(user);
-            }
-        }
-    }
 
     @Transactional
     public Subscription createPendingSubscription(Long userId, Long planId) {
@@ -193,5 +156,13 @@ public class SubscriptionService {
 
         return subRepo.save(s);
     }
+
+    public Subscription findActiveSubscription(Long userId) {
+        return subRepo
+                .findFirstByUser_IdAndStatusOrderByEndAtDesc(userId, "ACTIVE")
+                .filter(s -> s.getEndAt() == null || s.getEndAt().isAfter(LocalDateTime.now()))
+                .orElse(null);
+    }
+
 
 }
