@@ -139,28 +139,32 @@ public class SubscriptionService {
         return saved;
     }
 
-
-
-
-
     @Transactional
     public Subscription createPendingSubscription(Long userId, Long planId) {
-        if (userId == null) throw new RuntimeException("USER_ID_REQUIRED");
-        if (planId == null) throw new RuntimeException("PLAN_ID_REQUIRED");
+        if (userId == null)
+            throw new RuntimeException("USER_ID_REQUIRED");
+        if (planId == null)
+            throw new RuntimeException("PLAN_ID_REQUIRED");
 
         User u = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         Plan p = planRepo.findById(planId).orElseThrow(() -> new RuntimeException("PLAN_NOT_FOUND"));
 
-        //  KHÔNG CHẶN active nữa — vì bạn sẽ replace khi webhook SUCCESS
+        // KHÔNG CHẶN active nữa — vì bạn sẽ replace khi webhook SUCCESS
 
-        // Nhưng nên chặn nếu đang có pending chưa thanh toán để khỏi tạo vô hạn
+        // Kiểm tra nếu đang có pending với CÙNG planId thì trả về, nếu khác planId thì
+        // hủy và tạo mới
         List<Subscription> pending = subRepo.findByUserIdAndStatus(userId, "PENDING_PAYMENT");
         if (!pending.isEmpty()) {
-            // Option 1: trả lại pending hiện có (khuyên dùng)
-            return pending.get(0);
+            Subscription existingPending = pending.get(0);
 
-            // Option 2: hoặc throw nếu bạn muốn user phải hủy pending cũ trước
-            // throw new RuntimeException("USER_HAS_PENDING_PAYMENT");
+            // Nếu cùng plan, trả về pending hiện có
+            if (existingPending.getPlan().getId().equals(planId)) {
+                return existingPending;
+            }
+
+            // Nếu khác plan, hủy pending cũ và tạo mới
+            existingPending.setStatus("CANCELED");
+            subRepo.save(existingPending);
         }
 
         Subscription s = Subscription.builder()
@@ -172,13 +176,11 @@ public class SubscriptionService {
         return subRepo.save(s);
     }
 
-
     public Subscription findActiveSubscription(Long userId) {
         return subRepo
                 .findFirstByUser_IdAndStatusOrderByEndAtDesc(userId, "ACTIVE")
                 .filter(s -> s.getEndAt() == null || s.getEndAt().isAfter(LocalDateTime.now()))
                 .orElse(null);
     }
-
 
 }
